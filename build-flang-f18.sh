@@ -18,7 +18,16 @@ TMPDIR=${TMPDIR:-/tmp}
 
 llvm_src=${TMPDIR}/llvm-src
 llvm_build=${TMPDIR}/llvm-build
-prefix=/ford1/share/gmao_SIteam/llvm-flang/$(date +%F)
+
+# prefix is where the LLVM tools will be installed
+# We'd like to make this variable depending on the user
+# and where they want to install LLVM.
+# Let's go off of LLVM_PREFIX
+prefix=${LLVM_PREFIX:-/usr/local}
+
+# Now add the date to the prefix to avoid conflicts
+prefix=${prefix}/llvm-flang/$(date +%F)
+
 stem=$(basename ${remote} .zip)
 cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 
@@ -62,9 +71,12 @@ esac
 case "$OSTYPE" in
 darwin*)
     macos_sysroot=-DDEFAULT_SYSROOT="$(xcrun --show-sdk-path)"
+    # Quadmath not available on MacOS
+    quadmath=
     ;;
 *)
     llvm_linker=-DLLVM_USE_LINKER=gold
+    quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
     ;;
 esac\
 
@@ -76,7 +88,7 @@ cmake \
   -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
   -DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx;libunwind" \
   -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
-  -DFLANG_RUNTIME_F128_MATH_LIB=libquadmath \
+  $quadmath \
   $macos_sysroot \
   $llvm_linker \
   --install-prefix=$prefix \
