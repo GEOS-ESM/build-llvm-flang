@@ -6,18 +6,21 @@ ulimit -n 65536
 # -e: exit on error
 
 # Ninja is recommended for best build efficiency and speed
+# always use the ".zip" source file
 
 # adapted from https://github.com/jeffhammond/HPCInfo/blob/master/buildscripts/llvm-git.sh
 
+remote="${1:-https://github.com/llvm/llvm-project/archive/refs/heads/main.zip}"
+[[ -z $remote ]] && { echo "Usage: $0 [archive_url]" && exit 1; }
+
 # use TMPDIR if not empty, else /tmp
-#TMPDIR=${TMPDIR:-/tmp}
-TMPDIR=/ford1/share/gmao_SIteam/llvm-flang/tmp
+TMPDIR=${TMPDIR:-/tmp}
 
 llvm_src=${TMPDIR}/llvm-src
 llvm_build=${TMPDIR}/llvm-build
-#prefix=$HOME/llvm-latest
 prefix=/ford1/share/gmao_SIteam/llvm-flang/$(date +%F)
-cmake_root=${llvm_src}/llvm-project-main/llvm
+stem=$(basename ${remote} .zip)
+cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 
 llvm_projects="lld;mlir;clang;flang;openmp;pstl"
 
@@ -31,14 +34,15 @@ mkdir -p $llvm_src
 mkdir -p $llvm_build
 
 
-REPO=https://github.com/llvm/llvm-project.git
+# Git not used as it's so slow for a huge project history like LLVM.
+# git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
+
 # ~300 MB
-remote=https://github.com/llvm/llvm-project/archive/refs/heads/main.zip
 archive=${TMPDIR}/llvm_main.zip
 
 # Download/update the source
-[[ -f $archive ]] || curl -L -o $archive $remote
-# git clone --recursive $REPO $llvm_src  # so slow
+[[ -f $archive ]] || curl --location --output ${archive} ${remote}
+
 
 [[ -f ${cmake_root}/CMakeLists.txt ]] || unzip -d $llvm_src $archive
 
