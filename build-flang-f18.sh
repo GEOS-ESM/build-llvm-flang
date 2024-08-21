@@ -76,6 +76,7 @@ cmake \
   -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
   -DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx;libunwind" \
   -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
+  -DFLANG_RUNTIME_F128_MATH_LIB=libquadmath \
   $macos_sysroot \
   $llvm_linker \
   --install-prefix=$prefix \
