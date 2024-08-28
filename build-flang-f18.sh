@@ -134,8 +134,7 @@ archive=${TMPDIR}/llvm_main.zip
 # Download/update the source
 [[ -f $archive ]] || curl --location --output ${archive} ${remote}
 
-
-[[ -f ${cmake_root}/CMakeLists.txt ]] || unzip -d $llvm_src $archive
+[[ -f ${cmake_root}/CMakeLists.txt ]] || tar -C $llvm_src -xzf $archive
 
 [[ $(which ninja) ]] && CMAKE_GENERATOR="Ninja" || CMAKE_GENERATOR="Unix Makefiles"
 
