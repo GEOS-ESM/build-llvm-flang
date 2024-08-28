@@ -35,5 +35,7 @@ ENV FC=/opt/llvm-flang/bin/flang-new
 
 ENTRYPOINT ["/bin/bash"]
 
-# Build command
-# > docker build -f Dockerfile [--build-arg llvmversion=x.y.z] -t gmao/llvm-flang:<version> .
+# Build command for main tarfile
+#   docker build --no-cache --progress=plain -f Dockerfile -t gmao/llvm-flang:<version> . 2>&1 | tee build.log
+# Build command with a specific version of LLVM
+#   docker build --no-cache --progress=plain -f Dockerfile --build-arg llvmversion=19.1.0-rc3 -t gmao/llvm-flang:19.1.0-rc3 . 2>&1 | tee build.log
