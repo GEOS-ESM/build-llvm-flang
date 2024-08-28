@@ -151,14 +151,21 @@ esac
 
 case "$OSTYPE" in
 darwin*)
-    macos_sysroot=-DDEFAULT_SYSROOT="$(xcrun --show-sdk-path)"
-    # Quadmath not available on MacOS
-    quadmath=
-    ;;
+   macos_sysroot=-DDEFAULT_SYSROOT="$(xcrun --show-sdk-path)"
+   # Quadmath not available on MacOS
+   quadmath=
+   ;;
 *)
-    llvm_linker=-DLLVM_USE_LINKER=gold
-    quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
-    ;;
+   # We want to use the gold linker on Linux
+   # but it might be called ld.gold or gold
+   # so we need to check for it
+   if [[ -x $(which ld.gold) ]]; then
+     llvm_linker=-DLLVM_USE_LINKER=ld.gold
+   elif [[ -x $(which gold) ]]; then
+     llvm_linker=-DLLVM_USE_LINKER=gold
+   fi
+   quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
+   ;;
 esac\
 
 # lldb busted on MacOS
