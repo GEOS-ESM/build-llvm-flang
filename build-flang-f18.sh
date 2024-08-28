@@ -97,7 +97,7 @@ if [ "$ADD_DATE" = "TRUE" ]; then
   prefix=${prefix}/$(date +%F)
 fi
 
-stem=$(basename ${remote} .zip)
+stem=$(basename ${remote} .tar.gz)
 cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 
 # The LLVM projects to build
