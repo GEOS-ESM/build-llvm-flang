@@ -8,6 +8,7 @@ RUN apt-get update && \
     apt-get install -y \
        build-essential \
        cmake \
+       curl \
        git \
        ninja-build \
        wget && \
@@ -15,6 +16,17 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
+# We will be running a script called "build-flang-f18.sh" that will
+# download and build the flang compiler. This script will be copied
+# to the container and run as part of the build process.
+COPY build-flang-f18.sh /opt/build-flang-f18.sh
+
+ARG llvmversion=main
+
+# Next we will run the script to build the flang compiler with the options:
+# build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=$llvmversion
+
+RUN /opt/build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=${llvmversion}
 
 # Build command
-# > docker build --build-arg cmakeversion=x.y.z -f Dockerfile -t gmao/llvm-flang:<version> .
+# > docker build -f Dockerfile [--build-arg llvmversion=x.y.z] -t gmao/llvm-flang:<version> .
