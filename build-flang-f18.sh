@@ -1,17 +1,84 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
-ulimit -n 65536
-
-# -x: verbose
 # -e: exit on error
+
+# Command line arguments
+#  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
+#  --llvm-version=VERSION  LLVM version to build (default: latest main zip)
+#  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
+#  --add-date              add the date to the install prefix
+#  --verbose               print commands before execution
+#  -n | --dry-run          print commands without execution
+#  -h | --help             print help
+
+usage() {
+  printf "Usage: %s [options]\n" "$0"
+  printf "Options:\n"
+  printf "  --prefix=PREFIX         install files in PREFIX [/usr/local]\n"
+  printf "  --llvm-version=VERSION  LLVM version to build [latest main zip]\n"
+  printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
+  printf "  --add-date              add the date to the install prefix\n"
+  printf "  --verbose               print commands before execution\n"
+  printf "  -n | --dry-run          print commands without execution\n"
+  printf "  -h | --help             print help\n"
+  printf "\n"
+  printf  "NOTE: Set \$TMPDIR to change the temporary directory where the source is downloaded and built\n"
+}
+
+# Default values
+LLVM_PREFIX=/usr/local
+LLVM_PROJECTS="lld;mlir;clang;flang;openmp;pstl"
+LLVM_VERSION=main
+ADD_DATE=FALSE
+DRY_RUN=FALSE
+
+while [ $# -gt 0 ]; do
+   case "$1" in
+   --prefix=*)
+      LLVM_PREFIX="${1#*=}"
+      ;;
+   --llvm-projects=*)
+      LLVM_PROJECTS="${1#*=}"
+      ;;
+   --add-date)
+      ADD_DATE=TRUE
+      ;;
+   --verbose)
+      set -x
+      ;;
+   -n | --dry-run)
+      DRY_RUN=TRUE
+      ;;
+   -h | --help)
+      usage
+      exit 0
+      ;;
+   *)
+      printf "***************************\n"
+      printf "Error: Invalid argument\n"
+      printf "***************************\n"
+      usage
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+# Set the number of open files to a large number
+ulimit -n 65536
 
 # Ninja is recommended for best build efficiency and speed
 # always use the ".zip" source file
 
 # adapted from https://github.com/jeffhammond/HPCInfo/blob/master/buildscripts/llvm-git.sh
 
-remote="${1:-https://github.com/llvm/llvm-project/archive/refs/heads/main.zip}"
-[[ -z $remote ]] && { echo "Usage: $0 [archive_url]" && exit 1; }
+# if LLVM_VERSION is set to main, then use the latest main.zip
+# if it is, base it off of https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz
+if [ "$LLVM_VERSION" = "main" ]; then
+   remote="https://github.com/llvm/llvm-project/archive/refs/heads/main.zip"
+else
+   remote="https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz"
+fi
 
 # use TMPDIR if not empty, else /tmp
 TMPDIR=${TMPDIR:-/tmp}
@@ -19,29 +86,39 @@ TMPDIR=${TMPDIR:-/tmp}
 llvm_src=${TMPDIR}/llvm-src
 llvm_build=${TMPDIR}/llvm-build
 
-# prefix is where the LLVM tools will be installed
-# We'd like to make this variable depending on the user
-# and where they want to install LLVM.
 # Let's go off of LLVM_PREFIX
-prefix=${LLVM_PREFIX:-/usr/local}
+prefix=${LLVM_PREFIX}/llvm-flang
 
-# Now add the date to the prefix to avoid conflicts
-prefix=${prefix}/llvm-flang/$(date +%F)
+# Now add the date to the prefix if requested
+if [ "$ADD_DATE" = "TRUE" ]; then
+  prefix=${prefix}/$(date +%F)
+fi
 
 stem=$(basename ${remote} .zip)
 cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 
-llvm_projects="lld;mlir;clang;flang;openmp;pstl"
+# The LLVM projects to build
+llvm_projects=$LLVM_PROJECTS
 
 echo "LLVM projects: $llvm_projects"
 echo "LLVM source: $llvm_src"
 echo "LLVM build: $llvm_build"
 echo "LLVM install: $prefix"
 
+# Require that CC and CXX are set
+[[ -z $CC ]] && { echo "CC not set" && exit 1; }
+[[ -z $CXX ]] && { echo "CXX not set" && exit 1; }
+
+echo "CC: $CC"
+echo "CXX: $CXX"
+
+if [ "$DRY_RUN" = "TRUE" ]; then
+  exit 0
+fi
+
 mkdir -p $prefix
 mkdir -p $llvm_src
 mkdir -p $llvm_build
-
 
 # Git not used as it's so slow for a huge project history like LLVM.
 # git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
@@ -96,5 +173,17 @@ cmake \
   -B${llvm_build}
 
 cmake --build ${llvm_build}
+cmake --build ${llvm_build}
 
 cmake --install ${llvm_build}
+cmake --install ${llvm_build}
+
+# If flang-new runs, then the build is successful
+# and we can remove the build and source directories
+
+if [[ -x ${prefix}/bin/flang-new ]]; then
+  rm -rf $llvm_build $llvm_src
+else
+  echo "flang-new not found in $prefix/bin"
+  exit 1
+fi

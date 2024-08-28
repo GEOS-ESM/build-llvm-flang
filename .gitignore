@@ -2,3 +2,5 @@ tmp/
 202*/
 *.log
 OldBuildScripts/
+*.zip
+*.tar.gz
