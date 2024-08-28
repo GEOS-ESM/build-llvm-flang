@@ -9,6 +9,7 @@ RUN apt-get update && \
        build-essential \
        cmake \
        curl \
+       gfortran \
        git \
        ninja-build \
        wget && \
@@ -27,6 +28,14 @@ ARG llvmversion=main
 # build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=$llvmversion
 
 RUN /opt/build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=${llvmversion}
+
+# Set the PATH to include the flang compiler
+ENV PATH=/opt/llvm-flang/bin:$PATH
+ENV CC=/opt/llvm-flang/bin/clang
+ENV CXX=/opt/llvm-flang/bin/clang++
+ENV FC=/opt/llvm-flang/bin/flang-new
+
+ENTRYPOINT ["/bin/bash"]
 
 # Build command
 # > docker build -f Dockerfile [--build-arg llvmversion=x.y.z] -t gmao/llvm-flang:<version> .
