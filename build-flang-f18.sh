@@ -6,6 +6,7 @@
 #  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
 #  --llvm-version=VERSION  LLVM version to build (default: latest main zip)
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
+#  --no-gold               do not use the gold linker (useful on Docker)
 #  --add-date              add the date to the install prefix
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
@@ -17,6 +18,7 @@ usage() {
   printf "  --prefix=PREFIX         install files in PREFIX [/usr/local]\n"
   printf "  --llvm-version=VERSION  LLVM version to build [latest main zip]\n"
   printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
+  printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
@@ -31,6 +33,7 @@ LLVM_PROJECTS="lld;mlir;clang;flang;openmp;pstl"
 LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
+USE_GOLD=TRUE
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -42,6 +45,9 @@ while [ $# -gt 0 ]; do
       ;;
    --llvm-version=*)
       LLVM_VERSION="${1#*=}"
+      ;;
+   --no-gold)
+      USE_GOLD=FALSE
       ;;
    --add-date)
       ADD_DATE=TRUE
@@ -156,13 +162,10 @@ darwin*)
    quadmath=
    ;;
 *)
-   # We want to use the gold linker on Linux
-   # but it might be called ld.gold or gold
-   # so we need to check for it
-   if [[ -x $(which ld.gold) ]]; then
-     llvm_linker=-DLLVM_USE_LINKER=ld.gold
-   elif [[ -x $(which gold) ]]; then
-     llvm_linker=-DLLVM_USE_LINKER=gold
+   if [ "$USE_GOLD" = "TRUE" ]; then
+      llvm_linker=-DLLVM_USE_LINKER=gold
+   else
+      llvm_linker=
    fi
    quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
    ;;
