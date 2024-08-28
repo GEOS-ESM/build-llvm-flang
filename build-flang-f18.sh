@@ -40,6 +40,9 @@ while [ $# -gt 0 ]; do
    --llvm-projects=*)
       LLVM_PROJECTS="${1#*=}"
       ;;
+   --llvm-version=*)
+      LLVM_VERSION="${1#*=}"
+      ;;
    --add-date)
       ADD_DATE=TRUE
       ;;
@@ -75,7 +78,7 @@ ulimit -n 65536
 # if LLVM_VERSION is set to main, then use the latest main.zip
 # if it is, base it off of https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz
 if [ "$LLVM_VERSION" = "main" ]; then
-   remote="https://github.com/llvm/llvm-project/archive/refs/heads/main.zip"
+   remote="https://github.com/llvm/llvm-project/archive/refs/heads/main.tar.gz"
 else
    remote="https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz"
 fi
@@ -104,6 +107,8 @@ echo "LLVM projects: $llvm_projects"
 echo "LLVM source: $llvm_src"
 echo "LLVM build: $llvm_build"
 echo "LLVM install: $prefix"
+echo "LLVM version: $LLVM_VERSION"
+echo "LLVM remote: $remote"
 
 # Require that CC and CXX are set
 [[ -z $CC ]] && { echo "CC not set" && exit 1; }
