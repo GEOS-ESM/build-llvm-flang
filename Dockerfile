@@ -23,10 +23,9 @@ COPY build-flang-f18.sh /opt/build-flang-f18.sh
 
 ARG llvmversion=main
 
-# Next we will run the script to build the flang compiler with the options:
-# build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=$llvmversion
+# Next we will run the script to build the flang compiler with the options
 
-RUN CC=gcc CXX=g++ /opt/build-flang-f18.sh --prefix=/opt/llvm-flang --llvm-version=${llvmversion}
+RUN CC=gcc CXX=g++ /opt/build-flang-f18.sh --prefix=/opt --llvm-version=${llvmversion}
 
 # Set the PATH to include the flang compiler
 ENV PATH=/opt/llvm-flang/bin:$PATH
