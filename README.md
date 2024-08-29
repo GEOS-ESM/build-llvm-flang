@@ -7,6 +7,24 @@ https://gist.github.com/scivision/33bd9e17c9520d07be0448fe61541605
 
 with updates for use on Bucy (namely prefix, etc.).
 
+## Current Usage
+
+```
+$ ./build-flang-f18.sh -h
+Usage: ./build-flang-f18.sh [options]
+Options:
+  --prefix=PREFIX         install files in PREFIX [/usr/local]
+  --llvm-version=VERSION  LLVM version to build [latest main tar.gz]
+  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]
+  --no-gold               do not use the gold linker
+  --add-date              add the date to the install prefix
+  --verbose               print commands before execution
+  -n | --dry-run          print commands without execution
+  -h | --help             print help
+
+NOTE: Set $TMPDIR to change the temporary directory where the source is downloaded and built
+```
+
 ## 128 bit support
 
 We also update the script to add:
