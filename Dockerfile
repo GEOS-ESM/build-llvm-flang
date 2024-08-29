@@ -10,6 +10,7 @@ RUN apt-get update && \
        cmake \
        curl \
        git \
+       m4 \
        ninja-build \
        python3 \
        wget && \
