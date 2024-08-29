@@ -4,7 +4,7 @@
 
 # Command line arguments
 #  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
-#  --llvm-version=VERSION  LLVM version to build (default: latest main zip)
+#  --llvm-version=VERSION  LLVM version to build (default: latest main tar.gz)
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
 #  --no-gold               do not use the gold linker (useful on Docker)
 #  --add-date              add the date to the install prefix
@@ -16,7 +16,7 @@ usage() {
   printf "Usage: %s [options]\n" "$0"
   printf "Options:\n"
   printf "  --prefix=PREFIX         install files in PREFIX [/usr/local]\n"
-  printf "  --llvm-version=VERSION  LLVM version to build [latest main zip]\n"
+  printf "  --llvm-version=VERSION  LLVM version to build [latest main tar.gz]\n"
   printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
   printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
@@ -77,11 +77,11 @@ done
 ulimit -n 65536
 
 # Ninja is recommended for best build efficiency and speed
-# always use the ".zip" source file
+# always use the ".tar.gz" source file
 
 # adapted from https://github.com/jeffhammond/HPCInfo/blob/master/buildscripts/llvm-git.sh
 
-# if LLVM_VERSION is set to main, then use the latest main.zip
+# if LLVM_VERSION is set to main, then use the latest main.tar.gz
 # if it is, base it off of https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz
 if [ "$LLVM_VERSION" = "main" ]; then
    remote="https://github.com/llvm/llvm-project/archive/refs/heads/main.tar.gz"
@@ -135,7 +135,7 @@ mkdir -p $llvm_build
 # git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
 
 # ~300 MB
-archive=${TMPDIR}/llvm_main.zip
+archive=${TMPDIR}/llvm_main.tar.gz
 
 # Download/update the source
 [[ -f $archive ]] || curl --location --output ${archive} ${remote}
@@ -188,14 +188,13 @@ cmake \
 
 cmake --build ${llvm_build} -j 6
 
-cmake --install ${llvm_build} -j 6
-cmake --install ${llvm_build} -j 6
+cmake --install ${llvm_build}
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
 
 if [[ -x ${prefix}/bin/flang-new ]]; then
-  rm -rf $llvm_build $llvm_src
+  rm -rf $llvm_build $llvm_src $archive
 else
   echo "flang-new not found in $prefix/bin"
   exit 1
