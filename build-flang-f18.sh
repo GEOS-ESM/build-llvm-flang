@@ -186,11 +186,10 @@ cmake \
   -S${cmake_root} \
   -B${llvm_build}
 
-cmake --build ${llvm_build}
-cmake --build ${llvm_build}
+cmake --build ${llvm_build} -j 6
 
-cmake --install ${llvm_build}
-cmake --install ${llvm_build}
+cmake --install ${llvm_build} -j 6
+cmake --install ${llvm_build} -j 6
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
