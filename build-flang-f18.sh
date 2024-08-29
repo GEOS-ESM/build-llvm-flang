@@ -8,6 +8,7 @@
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
 #  --no-gold               do not use the gold linker (useful on Docker)
 #  --add-date              add the date to the install prefix
+#  --strip                 strip the binaries
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
 #  -h | --help             print help
@@ -20,6 +21,7 @@ usage() {
   printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
   printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
+  printf "  --strip                 strip the binaries\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
   printf "  -h | --help             print help\n"
@@ -34,6 +36,7 @@ LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
 USE_GOLD=TRUE
+STRIP=""
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -51,6 +54,9 @@ while [ $# -gt 0 ]; do
       ;;
    --add-date)
       ADD_DATE=TRUE
+      ;;
+   --strip)
+      STRIP="--strip"
       ;;
    --verbose)
       set -x
@@ -188,7 +194,7 @@ cmake \
 
 cmake --build ${llvm_build} -j 6
 
-cmake --install ${llvm_build}
+cmake --install ${llvm_build} ${STRIP}
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
