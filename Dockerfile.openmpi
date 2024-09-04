@@ -27,8 +27,3 @@ ENTRYPOINT ["/bin/bash"]
 #
 #   where (for example):
 #     <mpiversion> is "5.0.5"
-
-
-#   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:<version> . 2>&1 | tee build.log
-# Build command with a specific version of LLVM
-#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=19.1.0-rc3 -t gmao/llvm-flang:19.1.0-rc3 . 2>&1 | tee build.log
