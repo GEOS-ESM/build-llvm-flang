@@ -1,0 +1,81 @@
+version: 2.1
+##
+# The config will be executed on each pull_request update due to the GitHub Workflow.
+# Each push will also trigger the config, due to default CircleCI's behavior.
+##
+
+parameters:
+  GHA_Actor:
+    type: string
+    default: ""
+  GHA_Action:
+    type: string
+    default: ""
+  GHA_Event:
+    type: string
+    default: ""
+  GHA_Meta:
+    type: string
+    default: ""
+
+workflows:
+  build-docker-images:
+    when: << pipeline.parameters.GHA_Action >>
+    jobs:
+      - build-flang-image:
+          context:
+            - docker-hub-creds
+            - ghcr-creds
+      #- build-openmpi-image:
+          #context:
+            #- docker-hub-creds
+            #- ghcr-creds
+          #requires:
+            #- build-flang-image
+
+jobs:
+  build-flang-image:
+    docker:
+      - image: cimg/base
+    resource_class: xlarge
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Docker Hub
+          command: |
+            echo $DOCKERHUB_AUTH_TOKEN | docker login --username $DOCKERHUB_USER --password-stdin
+      - run:
+          name: Build Flang image
+          command: |
+            DATE=$(date '+%F')
+            ###docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:${DATE} -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
+            docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:ci-test .
+      - run:
+          name: Push Flang image to Docker Hub
+          command: |
+            ###docker push gmao/llvm-flang:${DATE}
+            ###docker push gmao/llvm-flang:latest
+            docker push gmao/llvm-flang:ci-test
+
+  build-openmpi-image:
+    docker:
+      - image: cimg/base
+    resource_class: xlarge
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Docker Hub
+          command: |
+            echo $DOCKERHUB_AUTH_TOKEN | docker login --username $DOCKERHUB_USER --password-stdin
+      - run:
+          name: Build OpenMPI image
+          command: |
+            docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi .
+      - run:
+          name: Push Open MPI image to Docker Hub
+          command: |
+            docker push gmao/llvm-flang-openmpi
