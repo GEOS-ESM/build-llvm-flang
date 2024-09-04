@@ -1,0 +1,34 @@
+FROM gmao/llvm-flang:latest
+
+ARG mpiversion=5.0.5
+
+ENV myOpenMPI=openmpi-${mpiversion}
+
+# Download and build ${myOpenMPI}
+RUN mkdir /bld && cd /bld && \
+    wget https://download.open-mpi.org/release/open-mpi/v5.0/${myOpenMPI}.tar.gz && \
+    tar zxvf ${myOpenMPI}.tar.gz && \
+    cd ${myOpenMPI} && \
+    ./configure --prefix=/opt/${myOpenMPI} --enable-static && \
+    make -j 8 && make install-strip && \
+    cd / && \rm -rf /bld
+
+# Add ${myOpenMPI} to path
+ENV OPENMPI=/opt/${myOpenMPI}
+ENV PATH=/opt/${myOpenMPI}/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/${myOpenMPI}/lib:$LD_LIBRARY_PATH
+
+ENTRYPOINT ["/bin/bash"]
+
+# Build command for default version of OpenMPI
+#   docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi:<mpiversion> . 2>&1 | tee build.log
+# Build command with a specific version of OpenMPI
+#   docker build --no-cache --progress=plain --build-arg mpiversion=<mpiversion> -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi:<mpiversion> . 2>&1 | tee build.log
+#
+#   where (for example):
+#     <mpiversion> is "5.0.5"
+
+
+#   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:<version> . 2>&1 | tee build.log
+# Build command with a specific version of LLVM
+#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=19.1.0-rc3 -t gmao/llvm-flang:19.1.0-rc3 . 2>&1 | tee build.log
