@@ -5,7 +5,7 @@ ARG mpiversion=5.0.5
 ENV myOpenMPI=openmpi-${mpiversion}
 
 # Download and build ${myOpenMPI}
-RUN mkdir /bld && cd /bld && \
+RUN mkdir  -p /bld && cd /bld && \
     wget https://download.open-mpi.org/release/open-mpi/v5.0/${myOpenMPI}.tar.gz && \
     tar zxvf ${myOpenMPI}.tar.gz && \
     cd ${myOpenMPI} && \
@@ -27,3 +27,5 @@ ENTRYPOINT ["/bin/bash"]
 #
 #   where (for example):
 #     <mpiversion> is "5.0.5"
+
+# vi: ft=dockerfile
