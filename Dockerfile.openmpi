@@ -21,9 +21,9 @@ ENV LD_LIBRARY_PATH=/opt/${myOpenMPI}/lib:$LD_LIBRARY_PATH
 ENTRYPOINT ["/bin/bash"]
 
 # Build command for default version of OpenMPI
-#   docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi . 2>&1 | tee build.log
+#   docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi . 2>&1 | tee build.openmpi.log
 # Build command with a specific version of OpenMPI
-#   docker build --no-cache --progress=plain --build-arg mpiversion=<mpiversion> -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi:<mpiversion> . 2>&1 | tee build.log
+#   docker build --no-cache --progress=plain --build-arg mpiversion=<mpiversion> -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi:<mpiversion> . 2>&1 | tee build.openmpi.log
 #
 #   where (for example):
 #     <mpiversion> is "5.0.5"
