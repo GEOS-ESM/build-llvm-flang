@@ -8,6 +8,7 @@
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
 #  --no-gold               do not use the gold linker (useful on Docker)
 #  --add-date              add the date to the install prefix
+#  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
@@ -21,6 +22,7 @@ usage() {
   printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
   printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
+  printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
@@ -37,6 +39,7 @@ ADD_DATE=FALSE
 DRY_RUN=FALSE
 USE_GOLD=TRUE
 STRIP=""
+DO_REBUILD=FALSE
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -54,6 +57,9 @@ while [ $# -gt 0 ]; do
       ;;
    --add-date)
       ADD_DATE=TRUE
+      ;;
+   --rebuild)
+      DO_REBUILD=TRUE
       ;;
    --strip)
       STRIP="--strip"
@@ -137,17 +143,6 @@ mkdir -p $prefix
 mkdir -p $llvm_src
 mkdir -p $llvm_build
 
-# Git not used as it's so slow for a huge project history like LLVM.
-# git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
-
-# ~300 MB
-archive=${TMPDIR}/llvm_main.tar.gz
-
-# Download/update the source
-[[ -f $archive ]] || curl --location --output ${archive} ${remote}
-
-[[ -f ${cmake_root}/CMakeLists.txt ]] || tar -C $llvm_src -xzf $archive
-
 [[ $(which ninja) ]] && CMAKE_GENERATOR="Ninja" || CMAKE_GENERATOR="Unix Makefiles"
 
 case "$(uname -m)" in
@@ -177,20 +172,33 @@ darwin*)
    ;;
 esac\
 
-# lldb busted on MacOS
-# libcxx requires libcxxabi
-cmake \
-  -G"$CMAKE_GENERATOR" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
-  -DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx;libunwind" \
-  -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
-  $quadmath \
-  $macos_sysroot \
-  $llvm_linker \
-  --install-prefix=$prefix \
-  -S${cmake_root} \
-  -B${llvm_build}
+if [ "$DO_REBUILD" = "FALSE" ]; then
+   # Git not used as it's so slow for a huge project history like LLVM.
+   # git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
+
+   # ~300 MB
+   archive=${TMPDIR}/llvm_main.tar.gz
+
+   # Download/update the source
+   [[ -f $archive ]] || curl --location --output ${archive} ${remote}
+
+   [[ -f ${cmake_root}/CMakeLists.txt ]] || tar -C $llvm_src -xzf $archive
+
+   # lldb busted on MacOS
+   # libcxx requires libcxxabi
+   cmake \
+   -G"$CMAKE_GENERATOR" \
+   -DCMAKE_BUILD_TYPE=Release \
+   -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
+   -DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx;libunwind" \
+   -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
+   $quadmath \
+   $macos_sysroot \
+   $llvm_linker \
+   --install-prefix=$prefix \
+   -S${cmake_root} \
+   -B${llvm_build}
+fi
 
 cmake --build ${llvm_build} -j 6
 
