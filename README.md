@@ -34,6 +34,14 @@ We also update the script to add:
 -DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
 ```
 
+## Docker Images
+
+This repo has Dockerfiles that are used to build the a couple of images hosted on Docker Hub:
+
+- [`gmao/llvm-flang`](https://hub.docker.com/r/gmao/llvm-flang/tags): This has a minimal Ubuntu 24.04 base with an install of
+  llvm-flang.
+- [`gmao/llvm-flang-openmpi`](https://hub.docker.com/r/gmao/llvm-flang-openmpi/tags): This is based on the above image and adds
+  OpenMPI.
 
 ---
 
