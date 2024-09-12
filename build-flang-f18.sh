@@ -17,9 +17,9 @@
 usage() {
   printf "Usage: %s [options]\n" "$0"
   printf "Options:\n"
-  printf "  --prefix=PREFIX         install files in PREFIX [/usr/local]\n"
-  printf "  --llvm-version=VERSION  LLVM version to build [latest main tar.gz]\n"
-  printf "  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]\n"
+  printf "  --prefix=PREFIX         install files in PREFIX [default: /usr/local]\n"
+  printf "  --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]\n"
+  printf "  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang;openmp;pstl]\n"
   printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --rebuild               just rebuild the source but do not download again\n"

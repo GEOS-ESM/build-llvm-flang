@@ -12,9 +12,9 @@ with updates for use on Bucy (namely prefix, etc.).
 ```
 Usage: ./build-flang-f18.sh [options]
 Options:
-  --prefix=PREFIX         install files in PREFIX [/usr/local]
-  --llvm-version=VERSION  LLVM version to build [latest main tar.gz]
-  --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]
+  --prefix=PREFIX         install files in PREFIX [default: /usr/local]
+  --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]
+  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang;openmp;pstl]
   --no-gold               do not use the gold linker
   --add-date              add the date to the install prefix
   --rebuild               just rebuild the source but do not download again
