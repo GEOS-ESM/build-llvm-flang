@@ -10,7 +10,6 @@ with updates for use on Bucy (namely prefix, etc.).
 ## Current Usage
 
 ```
-$ ./build-flang-f18.sh -h
 Usage: ./build-flang-f18.sh [options]
 Options:
   --prefix=PREFIX         install files in PREFIX [/usr/local]
@@ -18,6 +17,8 @@ Options:
   --llvm-projects=LIST    list of LLVM projects to build [lld;mlir;clang;flang;openmp;pstl]
   --no-gold               do not use the gold linker
   --add-date              add the date to the install prefix
+  --rebuild               just rebuild the source but do not download again
+  --strip                 strip the binaries
   --verbose               print commands before execution
   -n | --dry-run          print commands without execution
   -h | --help             print help
