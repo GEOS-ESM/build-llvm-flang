@@ -1,6 +1,10 @@
 name: Trigger Docker Build
 
+# We want to be able to trigger this workflow manually
+# and also run it once a week on Sunday
 on:
+  schedule:
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:
@@ -9,6 +13,6 @@ jobs:
     steps:
       - name: Build Docker Images
         id: docker-build
-        uses: CircleCI-Public/trigger-circleci-pipeline-action@v1.0.5
+        uses: CircleCI-Public/trigger-circleci-pipeline-action@v1.2.0
         env:
           CCI_TOKEN: ${{ secrets.CCI_TOKEN }}
