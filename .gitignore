@@ -4,3 +4,4 @@ tmp/
 OldBuildScripts/
 *.zip
 *.tar.gz
+*.nfs*

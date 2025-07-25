@@ -201,6 +201,8 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
 fi
 
 cmake --build ${llvm_build} -j 6
+cmake --build ${llvm_build} -j 6
+cmake --build ${llvm_build} -j 6
 
 cmake --install ${llvm_build} ${STRIP}
 
