@@ -20,16 +20,16 @@ RUN apt-get update && \
 
 ENTRYPOINT ["/bin/bash"]
 
-# We will be running a script called "build-flang-f18.sh" that will
+# We will be running a script called "build-flang.sh" that will
 # download and build the flang compiler. This script will be copied
 # to the container and run as part of the build process.
-COPY build-flang-f18.sh /opt/build-flang-f18.sh
+COPY build-flang.sh /opt/build-flang.sh
 
 ARG llvmversion=main
 
 # Next we will run the script to build the flang compiler with the options
 
-RUN CC=gcc CXX=g++ /opt/build-flang-f18.sh --prefix=/opt --llvm-version=${llvmversion} --no-gold --strip
+RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --no-gold --strip
 
 # Set the PATH to include the flang compiler
 ENV PATH=/opt/llvm-flang/bin:${PATH}

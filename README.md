@@ -10,7 +10,7 @@ with updates for use on Bucy (namely prefix, etc.).
 ## Current Usage
 
 ```
-Usage: ./build-flang-f18.sh [options]
+Usage: ./build-flang.sh [options]
 Options:
   --prefix=PREFIX         install files in PREFIX [default: /usr/local]
   --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]
@@ -47,7 +47,7 @@ This repo has Dockerfiles that are used to build the a couple of images hosted o
 
 ## Original Instructions
 
-This is a Bash script (macOS, Linux, ...) for building Flang-f18 and LLVM from source.
+This is a Bash script (macOS, Linux, ...) for building Flang and LLVM from source.
 It is adapted from [Jeff Hammond](https://github.com/jeffhammond/HPCInfo/blob/master/buildscripts/llvm-git.sh)
 
 Ninja: recommended for best build efficiency and speed.
@@ -56,19 +56,19 @@ In general, a recent GCC would work.
 On macOS, system AppleClang compiler can be used as well.
 
 ```sh
-bash build-flang-f18.sh
+bash build-flang.sh
 ```
 
 To specify the source URL, for example to build the latest LLVM 19.x release:
 
 ```sh
-bash build-flang-f18.sh https://github.com/llvm/llvm-project/archive/refs/heads/release/19.x.zip
+bash build-flang.sh https://github.com/llvm/llvm-project/archive/refs/heads/release/19.x.zip
 ```
 
 For a specific version of LLVM:
 
 ```sh
-bash build-flang-f18.sh https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-19.1.0-rc1.zip
+bash build-flang.sh https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-19.1.0-rc1.zip
 ```
 
 The source download is about 300 MB.

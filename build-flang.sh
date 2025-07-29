@@ -34,6 +34,7 @@ usage() {
 # Default values
 LLVM_PREFIX=/usr/local
 LLVM_PROJECTS="lld;mlir;clang;flang;openmp;pstl"
+LLVM_RUNTIMES="libcxxabi;libcxx;libunwind;compiler-rt;flang-rt"
 LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
@@ -48,6 +49,9 @@ while [ $# -gt 0 ]; do
       ;;
    --llvm-projects=*)
       LLVM_PROJECTS="${1#*=}"
+      ;;
+   --llvm-runtimes=*)
+      LLVM_RUNTIMES="${1#*=}"
       ;;
    --llvm-version=*)
       LLVM_VERSION="${1#*=}"
@@ -121,7 +125,11 @@ cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 # The LLVM projects to build
 llvm_projects=$LLVM_PROJECTS
 
+# The LLVM runtimes to build
+llvm_runtimes=$LLVM_RUNTIMES
+
 echo "LLVM projects: $llvm_projects"
+echo "LLVM runtimes: $llvm_runtimes"
 echo "LLVM source: $llvm_src"
 echo "LLVM build: $llvm_build"
 echo "LLVM install: $prefix"
@@ -190,7 +198,7 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    -G"$CMAKE_GENERATOR" \
    -DCMAKE_BUILD_TYPE=Release \
    -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
-   -DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx;libunwind" \
+   -DLLVM_ENABLE_RUNTIMES=${llvm_runtimes} \
    -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
    $quadmath \
    $macos_sysroot \
@@ -200,11 +208,12 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    -B${llvm_build}
 fi
 
-cmake --build ${llvm_build} -j 6
-cmake --build ${llvm_build} -j 6
-cmake --build ${llvm_build} -j 6
+TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j 6
 
 cmake --install ${llvm_build} ${STRIP}
+
+cd ${llvm_build}
+TMPDIR=${TMPDIR} ninja -j6 install
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
