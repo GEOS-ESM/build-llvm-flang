@@ -10,6 +10,7 @@
 #  --add-date              add the date to the install prefix
 #  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
+#  --procs                 number of build procs (default: 6)
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
 #  -h | --help             print help
@@ -24,6 +25,7 @@ usage() {
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
+  printf "  --procs=NUM             number of build procs [default: 6]\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
   printf "  -h | --help             print help\n"
@@ -40,6 +42,7 @@ ADD_DATE=FALSE
 DRY_RUN=FALSE
 USE_GOLD=TRUE
 STRIP=""
+PROCS=6
 DO_REBUILD=FALSE
 
 while [ $# -gt 0 ]; do
@@ -68,6 +71,9 @@ while [ $# -gt 0 ]; do
    --strip)
       STRIP="--strip"
       ;;
+   --procs=*)
+      PROCS="${1#*=}"
+      ;;
    --verbose)
       set -x
       ;;
@@ -90,7 +96,10 @@ while [ $# -gt 0 ]; do
 done
 
 # Set the number of open files to a large number
-ulimit -n 65536
+# NOTE: on some machines this might not be settable. So
+#       we should handle that gracefully.
+
+ulimit -n 65536 || echo "Warning: ulimit -n 65536 failed, continuing anyway"
 
 # Ninja is recommended for best build efficiency and speed
 # always use the ".tar.gz" source file
@@ -147,9 +156,9 @@ if [ "$DRY_RUN" = "TRUE" ]; then
   exit 0
 fi
 
-mkdir -p $prefix
-mkdir -p $llvm_src
-mkdir -p $llvm_build
+mkdir -p "$prefix"
+mkdir -p "$llvm_src"
+mkdir -p "$llvm_build"
 
 [[ $(which ninja) ]] && CMAKE_GENERATOR="Ninja" || CMAKE_GENERATOR="Unix Makefiles"
 
@@ -208,17 +217,17 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    -B${llvm_build}
 fi
 
-TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j 6
+TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j ${PROCS}
 
-cmake --install ${llvm_build} ${STRIP}
+TMPDIR=${TMPDIR} cmake --install ${llvm_build} ${STRIP}
 
 cd ${llvm_build}
-TMPDIR=${TMPDIR} ninja -j6 install
+TMPDIR=${TMPDIR} ninja -j ${PROCS} install
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
 
-if [[ -x ${prefix}/bin/flang-new ]]; then
+if [[ -x ${prefix}/bin/flang ]]; then
   rm -rf $llvm_build $llvm_src $archive
 else
   echo "flang-new not found in $prefix/bin"
