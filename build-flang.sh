@@ -5,12 +5,13 @@
 # Command line arguments
 #  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
 #  --llvm-version=VERSION  LLVM version to build (default: latest main tar.gz)
-#  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang;openmp;pstl)
+#  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang)
 #  --no-gold               do not use the gold linker (useful on Docker)
 #  --add-date              add the date to the install prefix
 #  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
 #  --procs                 number of build procs (default: 6)
+#  --just-download         just download the source but do not build
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
 #  -h | --help             print help
@@ -20,12 +21,13 @@ usage() {
   printf "Options:\n"
   printf "  --prefix=PREFIX         install files in PREFIX [default: /usr/local]\n"
   printf "  --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]\n"
-  printf "  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang;openmp;pstl]\n"
+  printf "  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang]\n"
   printf "  --no-gold               do not use the gold linker\n"
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
   printf "  --procs=NUM             number of build procs [default: 6]\n"
+  printf "  --just-download         just download the source but do not build\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
   printf "  -h | --help             print help\n"
@@ -35,8 +37,8 @@ usage() {
 
 # Default values
 LLVM_PREFIX=/usr/local
-LLVM_PROJECTS="lld;mlir;clang;flang;openmp;pstl"
-LLVM_RUNTIMES="libcxxabi;libcxx;libunwind;compiler-rt;flang-rt"
+LLVM_PROJECTS="lld;mlir;clang;flang"
+LLVM_RUNTIMES="libcxxabi;libcxx;libunwind;compiler-rt;flang-rt;openmp"
 LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
@@ -44,6 +46,7 @@ USE_GOLD=TRUE
 STRIP=""
 PROCS=6
 DO_REBUILD=FALSE
+JUST_DOWNLOAD=FALSE
 
 while [ $# -gt 0 ]; do
    case "$1" in
@@ -67,6 +70,9 @@ while [ $# -gt 0 ]; do
       ;;
    --rebuild)
       DO_REBUILD=TRUE
+      ;;
+   --just-download)
+      JUST_DOWNLOAD=TRUE
       ;;
    --strip)
       STRIP="--strip"
@@ -126,6 +132,8 @@ prefix=${LLVM_PREFIX}/llvm-flang
 # Now add the date to the prefix if requested
 if [ "$ADD_DATE" = "TRUE" ]; then
   prefix=${prefix}/$(date +%F)
+elif [ "$LLVM_VERSION" != "main" ]; then
+  prefix=${prefix}/${LLVM_VERSION}
 fi
 
 stem=$(basename ${remote} .tar.gz)
@@ -145,12 +153,14 @@ echo "LLVM install: $prefix"
 echo "LLVM version: $LLVM_VERSION"
 echo "LLVM remote: $remote"
 
-# Require that CC and CXX are set
-[[ -z $CC ]] && { echo "CC not set" && exit 1; }
-[[ -z $CXX ]] && { echo "CXX not set" && exit 1; }
+# Require that CC and CXX are set if not just downloading
+if [ "$JUST_DOWNLOAD" = "FALSE" ]; then
+   [[ -z $CC ]] && { echo "CC not set" && exit 1; }
+   [[ -z $CXX ]] && { echo "CXX not set" && exit 1; }
 
-echo "CC: $CC"
-echo "CXX: $CXX"
+   echo "CC: $CC"
+   echo "CXX: $CXX"
+fi
 
 if [ "$DRY_RUN" = "TRUE" ]; then
   exit 0
@@ -193,13 +203,28 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    # Git not used as it's so slow for a huge project history like LLVM.
    # git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
 
-   # ~300 MB
-   archive=${TMPDIR}/llvm_main.tar.gz
+   archive=${TMPDIR}/llvm_${LLVM_VERSION}.tar.gz
 
    # Download/update the source
-   [[ -f $archive ]] || curl --location --output ${archive} ${remote}
+   if [[ -f $archive ]]; then
+     echo "$archive already exists, skipping download"
+   else
+     echo "Downloading $remote to $archive"
+     curl --location --output ${archive} ${remote}
+   fi
 
-   [[ -f ${cmake_root}/CMakeLists.txt ]] || tar -C $llvm_src -xzf $archive
+   # Extract the source
+   if [[ -f ${cmake_root}/CMakeLists.txt ]]; then
+     echo "$cmake_root/CMakeLists.txt already exists, skipping extract"
+   else
+     echo "Extracting $archive to $llvm_src"
+     tar -C $llvm_src -xzf $archive
+   fi
+
+   if [ "$JUST_DOWNLOAD" = "TRUE" ]; then
+     echo "Just download requested, exiting"
+     exit 0
+   fi
 
    # lldb busted on MacOS
    # libcxx requires libcxxabi
