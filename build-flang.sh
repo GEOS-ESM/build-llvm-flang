@@ -197,7 +197,41 @@ darwin*)
    fi
    quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
    ;;
-esac\
+esac
+
+# --- Begin: Inject GCC toolchain hints for consistent libstdc++ across hosts ---
+# If GCC_TOOLCHAIN is not preset by the user environment, try to deduce it.
+if [[ -z "${GCC_TOOLCHAIN:-}" ]]; then
+  if command -v g++-12 >/dev/null 2>&1; then
+    GCC_TOOLCHAIN="$(dirname "$(g++-12 -print-libgcc-file-name)")/.."
+  elif command -v g++ >/dev/null 2>&1; then
+    # Fallback to whatever g++ is on PATH (may be old; prefer g++-12 when available).
+    GCC_TOOLCHAIN="$(dirname "$(g++ -print-libgcc-file-name)")/.."
+  fi
+fi
+
+# Compose flags for Clang/CMake and ensure runtimes inherit them as well.
+TOOLCHAIN_C_FLAGS=""
+TOOLCHAIN_CXX_FLAGS=""
+RUNTIMES_ARGS=""
+LLVM_GCC_PREFIX=""
+EXE_LDFLAGS=""
+SHARED_LDFLAGS=""
+if [[ -n "${GCC_TOOLCHAIN:-}" ]]; then
+  TOOLCHAIN_C_FLAGS="--gcc-toolchain=${GCC_TOOLCHAIN}"
+  TOOLCHAIN_CXX_FLAGS="--gcc-toolchain=${GCC_TOOLCHAIN}"
+  # Ensure the nested runtimes super-build (e.g., openmp) gets the same toolchain.
+  RUNTIMES_ARGS="-DRUNTIMES_CMAKE_ARGS=CMAKE_C_FLAGS=${TOOLCHAIN_C_FLAGS};CMAKE_CXX_FLAGS=${TOOLCHAIN_CXX_FLAGS}"
+  # Also set GCC_INSTALL_PREFIX for LLVM’s own detection code.
+  LLVM_GCC_PREFIX="-DGCC_INSTALL_PREFIX=${GCC_TOOLCHAIN}"
+  # Embed an rpath to the GCC libdir so built binaries locate the matching libstdc++ at runtime.
+  if [[ -d "${GCC_TOOLCHAIN}/lib64" ]]; then
+    EXTRA_LDFLAGS="-Wl,-rpath,${GCC_TOOLCHAIN}/lib64"
+    EXE_LDFLAGS="-DCMAKE_EXE_LINKER_FLAGS=${EXTRA_LDFLAGS}"
+    SHARED_LDFLAGS="-DCMAKE_SHARED_LINKER_FLAGS=${EXTRA_LDFLAGS}"
+  fi
+fi
+# --- End: Inject GCC toolchain hints ---
 
 if [ "$DO_REBUILD" = "FALSE" ]; then
    # Git not used as it's so slow for a huge project history like LLVM.
@@ -237,6 +271,12 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    $quadmath \
    $macos_sysroot \
    $llvm_linker \
+   ${LLVM_GCC_PREFIX} \
+   -DCMAKE_C_FLAGS="${TOOLCHAIN_C_FLAGS}" \
+   -DCMAKE_CXX_FLAGS="${TOOLCHAIN_CXX_FLAGS}" \
+   ${RUNTIMES_ARGS} \
+   ${EXE_LDFLAGS} \
+   ${SHARED_LDFLAGS} \
    --install-prefix=$prefix \
    -S${cmake_root} \
    -B${llvm_build}
