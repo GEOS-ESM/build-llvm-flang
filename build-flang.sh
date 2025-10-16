@@ -6,7 +6,8 @@
 #  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
 #  --llvm-version=VERSION  LLVM version to build (default: latest main tar.gz)
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang)
-#  --no-gold               do not use the gold linker (useful on Docker)
+#  --use-gold              use the gold linker
+#  --use-lld               use the lld linker
 #  --add-date              add the date to the install prefix
 #  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
@@ -22,7 +23,8 @@ usage() {
   printf "  --prefix=PREFIX         install files in PREFIX [default: /usr/local]\n"
   printf "  --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]\n"
   printf "  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang]\n"
-  printf "  --no-gold               do not use the gold linker\n"
+  printf "  --use-gold              use the gold linker\n"
+  printf "  --use-lld               use the lld linker\n"
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
@@ -42,7 +44,8 @@ LLVM_RUNTIMES="libcxxabi;libcxx;libunwind;compiler-rt;flang-rt;openmp"
 LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
-USE_GOLD=TRUE
+USE_GOLD=FALSE
+USE_LLD=FALSE
 STRIP=""
 PROCS=6
 DO_REBUILD=FALSE
@@ -62,8 +65,11 @@ while [ $# -gt 0 ]; do
    --llvm-version=*)
       LLVM_VERSION="${1#*=}"
       ;;
-   --no-gold)
-      USE_GOLD=FALSE
+   --use-gold)
+      USE_GOLD=TRUE
+      ;;
+   --use-lld)
+      USE_LLD=TRUE
       ;;
    --add-date)
       ADD_DATE=TRUE
@@ -192,6 +198,8 @@ darwin*)
 *)
    if [ "$USE_GOLD" = "TRUE" ]; then
       llvm_linker=-DLLVM_USE_LINKER=gold
+   elif [ "$USE_LLD" = "TRUE" ]; then
+      llvm_linker=-DLLVM_USE_LINKER=lld
    else
       llvm_linker=
    fi
@@ -271,12 +279,14 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    $quadmath \
    $macos_sysroot \
    $llvm_linker \
-   ${LLVM_GCC_PREFIX} \
+   "${LLVM_GCC_PREFIX}" \
+   -DCMAKE_C_COMPILER="${CC}" \
+   -DCMAKE_CXX_COMPILER="${CXX}" \
    -DCMAKE_C_FLAGS="${TOOLCHAIN_C_FLAGS}" \
    -DCMAKE_CXX_FLAGS="${TOOLCHAIN_CXX_FLAGS}" \
-   ${RUNTIMES_ARGS} \
-   ${EXE_LDFLAGS} \
-   ${SHARED_LDFLAGS} \
+   "${RUNTIMES_ARGS}" \
+   "${EXE_LDFLAGS}" \
+   "${SHARED_LDFLAGS}" \
    --install-prefix=$prefix \
    -S${cmake_root} \
    -B${llvm_build}
