@@ -39,7 +39,7 @@ ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib/x86_64-unknown-linux-gnu:${LD_LIBRARY_PA
 
 ENV CC=/opt/llvm-flang/bin/clang
 ENV CXX=/opt/llvm-flang/bin/clang++
-ENV FC=/opt/llvm-flang/bin/flang-new
+ENV FC=/opt/llvm-flang/bin/flang
 
 # Build command for main tarfile with date
 #   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:$(date '+%F') -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
