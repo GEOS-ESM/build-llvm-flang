@@ -6,23 +6,31 @@
 #  --prefix=PREFIX         install files in PREFIX/llvm-flang (default: /usr/local)
 #  --llvm-version=VERSION  LLVM version to build (default: latest main tar.gz)
 #  --llvm-projects=LIST    list of LLVM projects to build (default: lld;mlir;clang;flang)
-#  --no-gold               do not use the gold linker (useful on Docker)
+#  --llvm-runtimes=LIST    list of LLVM runtimes to build (default: compiler-rt;flang-rt;openmp)
+#  --use-gold              use the gold linker
+#  --use-lld               use the lld linker
 #  --add-date              add the date to the install prefix
 #  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
-#  --procs                 number of build procs (default: 6)
+#  --procs=NUM             number of build procs (default: 6)
 #  --just-download         just download the source but do not build
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
 #  -h | --help             print help
+#
+# Environment:
+#   TMPDIR   scratch area for src/build (default: /tmp)
+#   CC, CXX  required unless --just-download is used
 
 usage() {
   printf "Usage: %s [options]\n" "$0"
   printf "Options:\n"
   printf "  --prefix=PREFIX         install files in PREFIX [default: /usr/local]\n"
   printf "  --llvm-version=VERSION  LLVM version to build [default: latest main tar.gz]\n"
-  printf "  --llvm-projects=LIST    list of LLVM projects to build [default: lld;mlir;clang;flang]\n"
-  printf "  --no-gold               do not use the gold linker\n"
+  printf "  --llvm-projects=LIST    LLVM projects to build [default: lld;mlir;clang;flang]\n"
+  printf "  --llvm-runtimes=LIST    LLVM runtimes to build [default: compiler-rt;flang-rt;openmp]\n"
+  printf "  --use-gold              use the gold linker\n"
+  printf "  --use-lld               use the lld linker\n"
   printf "  --add-date              add the date to the install prefix\n"
   printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
@@ -32,17 +40,18 @@ usage() {
   printf "  -n | --dry-run          print commands without execution\n"
   printf "  -h | --help             print help\n"
   printf "\n"
-  printf  "NOTE: Set \$TMPDIR to change the temporary directory where the source is downloaded and built\n"
+  printf "NOTE: Set \$TMPDIR to change the temporary directory where the source is downloaded and built\n"
 }
 
 # Default values
 LLVM_PREFIX=/usr/local
 LLVM_PROJECTS="lld;mlir;clang;flang"
-LLVM_RUNTIMES="libcxxabi;libcxx;libunwind;compiler-rt;flang-rt;openmp"
+LLVM_RUNTIMES="compiler-rt;flang-rt;openmp"
 LLVM_VERSION=main
 ADD_DATE=FALSE
 DRY_RUN=FALSE
-USE_GOLD=TRUE
+USE_GOLD=FALSE
+USE_LLD=FALSE
 STRIP=""
 PROCS=6
 DO_REBUILD=FALSE
@@ -62,8 +71,11 @@ while [ $# -gt 0 ]; do
    --llvm-version=*)
       LLVM_VERSION="${1#*=}"
       ;;
-   --no-gold)
-      USE_GOLD=FALSE
+   --use-gold)
+      USE_GOLD=TRUE
+      ;;
+   --use-lld)
+      USE_LLD=TRUE
       ;;
    --add-date)
       ADD_DATE=TRUE
@@ -92,7 +104,7 @@ while [ $# -gt 0 ]; do
       ;;
    *)
       printf "***************************\n"
-      printf "Error: Invalid argument\n"
+      printf "Error: Invalid argument: %s\n" "$1"
       printf "***************************\n"
       usage
       exit 1
@@ -101,35 +113,26 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# Set the number of open files to a large number
-# NOTE: on some machines this might not be settable. So
-#       we should handle that gracefully.
-
+# Try to raise file descriptor limit, but don't die if we can't
 ulimit -n 65536 || echo "Warning: ulimit -n 65536 failed, continuing anyway"
 
-# Ninja is recommended for best build efficiency and speed
-# always use the ".tar.gz" source file
-
-# adapted from https://github.com/jeffhammond/HPCInfo/blob/master/buildscripts/llvm-git.sh
-
-# if LLVM_VERSION is set to main, then use the latest main.tar.gz
-# if it is, base it off of https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz
+# LLVM tarball URL
 if [ "$LLVM_VERSION" = "main" ]; then
    remote="https://github.com/llvm/llvm-project/archive/refs/heads/main.tar.gz"
 else
    remote="https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz"
 fi
 
-# use TMPDIR if not empty, else /tmp
+# Use TMPDIR if set; else /tmp
 TMPDIR=${TMPDIR:-/tmp}
 
 llvm_src=${TMPDIR}/llvm-src
 llvm_build=${TMPDIR}/llvm-build
 
-# Let's go off of LLVM_PREFIX
+# Base install prefix
 prefix=${LLVM_PREFIX}/llvm-flang
 
-# Now add the date to the prefix if requested
+# Add date or version to prefix if requested
 if [ "$ADD_DATE" = "TRUE" ]; then
   prefix=${prefix}/$(date +%F)
 elif [ "$LLVM_VERSION" != "main" ]; then
@@ -139,27 +142,24 @@ fi
 stem=$(basename ${remote} .tar.gz)
 cmake_root=${llvm_src}/llvm-project-${stem}/llvm
 
-# The LLVM projects to build
 llvm_projects=$LLVM_PROJECTS
-
-# The LLVM runtimes to build
 llvm_runtimes=$LLVM_RUNTIMES
 
-echo "LLVM projects: $llvm_projects"
-echo "LLVM runtimes: $llvm_runtimes"
-echo "LLVM source: $llvm_src"
-echo "LLVM build: $llvm_build"
-echo "LLVM install: $prefix"
-echo "LLVM version: $LLVM_VERSION"
-echo "LLVM remote: $remote"
+echo "LLVM projects : $llvm_projects"
+echo "LLVM runtimes : $llvm_runtimes"
+echo "LLVM source   : $llvm_src"
+echo "LLVM build    : $llvm_build"
+echo "LLVM install  : $prefix"
+echo "LLVM version  : $LLVM_VERSION"
+echo "LLVM remote   : $remote"
 
-# Require that CC and CXX are set if not just downloading
+# Require CC and CXX unless we are just downloading
 if [ "$JUST_DOWNLOAD" = "FALSE" ]; then
-   [[ -z $CC ]] && { echo "CC not set" && exit 1; }
-   [[ -z $CXX ]] && { echo "CXX not set" && exit 1; }
+  [[ -z $CC ]] && { echo "CC not set"; exit 1; }
+  [[ -z $CXX ]] && { echo "CXX not set"; exit 1; }
 
-   echo "CC: $CC"
-   echo "CXX: $CXX"
+  echo "CC:  $CC"
+  echo "CXX: $CXX"
 fi
 
 if [ "$DRY_RUN" = "TRUE" ]; then
@@ -170,7 +170,12 @@ mkdir -p "$prefix"
 mkdir -p "$llvm_src"
 mkdir -p "$llvm_build"
 
-[[ $(which ninja) ]] && CMAKE_GENERATOR="Ninja" || CMAKE_GENERATOR="Unix Makefiles"
+# Prefer Ninja if available
+if command -v ninja >/dev/null 2>&1; then
+  CMAKE_GENERATOR="Ninja"
+else
+  CMAKE_GENERATOR="Unix Makefiles"
+fi
 
 case "$(uname -m)" in
   arm64|aarch64)
@@ -181,28 +186,31 @@ case "$(uname -m)" in
     ;;
 esac
 
-# helpful system parameters
-
+# OS-specific parameters
 case "$OSTYPE" in
 darwin*)
    macos_sysroot=-DDEFAULT_SYSROOT="$(xcrun --show-sdk-path)"
-   # Quadmath not available on MacOS
    quadmath=
+   llvm_linker=
    ;;
 *)
+   macos_sysroot=
    if [ "$USE_GOLD" = "TRUE" ]; then
       llvm_linker=-DLLVM_USE_LINKER=gold
+   elif [ "$USE_LLD" = "TRUE" ]; then
+      llvm_linker=-DLLVM_USE_LINKER=lld
    else
       llvm_linker=
    fi
    quadmath=-DFLANG_RUNTIME_F128_MATH_LIB=libquadmath
    ;;
-esac\
+esac
+
+###############################################################################
+# Download + extract + configure
+###############################################################################
 
 if [ "$DO_REBUILD" = "FALSE" ]; then
-   # Git not used as it's so slow for a huge project history like LLVM.
-   # git clone --recursive https://github.com/llvm/llvm-project.git $llvm_src
-
    archive=${TMPDIR}/llvm_${LLVM_VERSION}.tar.gz
 
    # Download/update the source
@@ -226,35 +234,36 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
      exit 0
    fi
 
-   # lldb busted on MacOS
-   # libcxx requires libcxxabi
+   # Configure
    cmake \
    -G"$CMAKE_GENERATOR" \
    -DCMAKE_BUILD_TYPE=Release \
    -DLLVM_TARGETS_TO_BUILD=$llvm_arch \
    -DLLVM_ENABLE_RUNTIMES=${llvm_runtimes} \
    -DLLVM_ENABLE_PROJECTS=${llvm_projects} \
+   -DLLVM_INCLUDE_TESTS=OFF \
    $quadmath \
    $macos_sysroot \
    $llvm_linker \
+   -DCMAKE_C_COMPILER="$CC" \
+   -DCMAKE_CXX_COMPILER="$CXX" \
    --install-prefix=$prefix \
    -S${cmake_root} \
    -B${llvm_build}
 fi
 
-TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j ${PROCS}
+###############################################################################
+# Build + install
+###############################################################################
 
+TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j ${PROCS}
 TMPDIR=${TMPDIR} cmake --install ${llvm_build} ${STRIP}
 
-cd ${llvm_build}
-TMPDIR=${TMPDIR} ninja -j ${PROCS} install
-
-# If flang-new runs, then the build is successful
-# and we can remove the build and source directories
-
-if [[ -x ${prefix}/bin/flang ]]; then
-  rm -rf $llvm_build $llvm_src $archive
+# If flang or flang-new exists, call it good
+if [[ -x ${prefix}/bin/flang ]] || [[ -x ${prefix}/bin/flang-new ]]; then
+  echo "Flang appears to be installed under ${prefix}/bin"
 else
-  echo "flang-new not found in $prefix/bin"
+  echo "flang/flang-new not found in $prefix/bin"
   exit 1
 fi
+
