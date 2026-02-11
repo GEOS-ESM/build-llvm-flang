@@ -1,0 +1,45 @@
+FROM gmao/llvm-flang-musl:latest
+
+ARG mpiversion=5.0.7
+ARG mpiprocs=12
+
+ENV myOpenMPI=openmpi-${mpiversion}
+
+# Download and build ${myOpenMPI} with MUSL
+RUN mkdir -p /bld && cd /bld && \
+    wget https://download.open-mpi.org/release/open-mpi/v5.0/${myOpenMPI}.tar.gz && \
+    tar zxvf ${myOpenMPI}.tar.gz && \
+    cd ${myOpenMPI} && \
+    ./configure --prefix=/opt/${myOpenMPI} --enable-static --enable-shared && \
+    make -j ${mpiprocs} && make install-strip && \
+    cd / && rm -rf /bld
+
+# Add ${myOpenMPI} to path
+ENV OPENMPI=/opt/${myOpenMPI}
+ENV PATH=/opt/${myOpenMPI}/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/${myOpenMPI}/lib:$LD_LIBRARY_PATH
+
+# Create tarball of the full installation (flang + openmpi)
+RUN cd /opt && tar czf llvm-flang-openmpi.tar.gz llvm-flang/ openmpi-*/
+
+ENTRYPOINT ["/bin/bash"]
+
+# Build command for default versions
+#   docker build --no-cache --progress=plain -f Dockerfile.openmpi-musl -t gmao/llvm-flang-openmpi-musl:latest . 2>&1 | tee build.openmpi-musl.log
+#
+# Build command with specific versions of LLVM Flang and OpenMPI
+#   docker build --no-cache --progress=plain -f Dockerfile.openmpi-musl --build-arg mpiversion=5.0.5 -t gmao/llvm-flang-openmpi-musl:latest . 2>&1 | tee build.openmpi-musl.log
+#
+# Build command with custom number of processes for OpenMPI build
+#   docker build --no-cache --progress=plain -f Dockerfile.openmpi-musl --build-arg mpiversion=5.0.5 --build-arg mpiprocs=16 -t gmao/llvm-flang-openmpi-musl:latest . 2>&1 | tee build.openmpi-musl.log
+#
+# Extract tarballs from built image:
+#   docker create --name flang-openmpi-musl gmao/llvm-flang-openmpi-musl:latest
+#   docker cp flang-openmpi-musl:/opt/llvm-flang-openmpi.tar.gz ./
+#   docker rm flang-openmpi-musl
+#   tar xzf llvm-flang-openmpi.tar.gz
+#
+# NOTE: Build Dockerfile.flang-musl first to create the base image:
+#   docker build --no-cache -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:latest .
+
+# vi: ft=dockerfile
