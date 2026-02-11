@@ -1,0 +1,46 @@
+FROM alpine:latest
+
+# Install dependencies for Alpine (uses MUSL by default)
+RUN apk add --no-cache \
+    build-base \
+    cmake \
+    curl \
+    git \
+    m4 \
+    ninja \
+    python3 \
+    wget
+
+# Copy the build script
+COPY build-flang.sh /opt/build-flang.sh
+
+ARG llvmversion=main
+
+# Build flang with MUSL
+RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --no-gold --strip
+
+# Set the PATH to include the flang compiler
+ENV PATH=/opt/llvm-flang/bin:${PATH}
+ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib/x86_64-unknown-linux-musl:${LD_LIBRARY_PATH}
+
+ENV CC=/opt/llvm-flang/bin/clang
+ENV CXX=/opt/llvm-flang/bin/clang++
+ENV FC=/opt/llvm-flang/bin/flang
+
+# Build command for main tarfile with date
+#   docker build --no-cache --progress=plain -f Dockerfile.flang-musl -t gmao/llvm-flang-musl:$(date '+%F') -t gmao/llvm-flang-musl:latest . 2>&1 | tee build.flang-musl.log
+#
+# Build command with a specific version of LLVM
+#   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
+#
+# Extract binaries from built image:
+#   docker create --name flang-musl gmao/llvm-flang-musl:latest
+#   docker cp flang-musl:/opt/llvm-flang ./llvm-flang-musl
+#   docker rm flang-musl
+#
+# To build and extract a specific version in one go:
+#   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
+#   docker create --name flang-musl gmao/llvm-flang-musl:22.1.0-rc3
+#   docker cp flang-musl:/opt/llvm-flang ./llvm-flang-musl-22.1.0-rc3
+#   docker rm flang-musl
