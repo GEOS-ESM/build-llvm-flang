@@ -28,19 +28,24 @@ ENV CC=/opt/llvm-flang/bin/clang
 ENV CXX=/opt/llvm-flang/bin/clang++
 ENV FC=/opt/llvm-flang/bin/flang
 
+# Create a tarball of the binaries
+RUN cd /opt && tar czf llvm-flang.tar.gz llvm-flang/
+
 # Build command for main tarfile with date
 #   docker build --no-cache --progress=plain -f Dockerfile.flang-musl -t gmao/llvm-flang-musl:$(date '+%F') -t gmao/llvm-flang-musl:latest . 2>&1 | tee build.flang-musl.log
 #
 # Build command with a specific version of LLVM
 #   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
 #
-# Extract binaries from built image:
+# Extract tarball from built image:
 #   docker create --name flang-musl gmao/llvm-flang-musl:latest
-#   docker cp flang-musl:/opt/llvm-flang ./llvm-flang-musl
+#   docker cp flang-musl:/opt/llvm-flang.tar.gz ./
 #   docker rm flang-musl
+#   tar xzf llvm-flang.tar.gz
 #
 # To build and extract a specific version in one go:
 #   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
 #   docker create --name flang-musl gmao/llvm-flang-musl:22.1.0-rc3
-#   docker cp flang-musl:/opt/llvm-flang ./llvm-flang-musl-22.1.0-rc3
+#   docker cp flang-musl:/opt/llvm-flang.tar.gz ./llvm-flang-22.1.0-rc3.tar.gz
 #   docker rm flang-musl
+#   tar xzf llvm-flang-22.1.0-rc3.tar.gz -C /opt
