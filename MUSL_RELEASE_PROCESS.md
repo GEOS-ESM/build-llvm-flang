@@ -133,9 +133,9 @@ This allows users to pull the image directly:
 docker pull gmao/llvm-flang-musl:22.1.0-rc3
 ```
 
-## Step 6: (Optional) Also Build OpenMPI + Flang
+## Step 6: (Optional) Build OpenMPI Docker Image (Docker-only, not for release)
 
-If you want to include OpenMPI with the Flang build:
+If you want a Docker image with both Flang and OpenMPI (for containerized workflows):
 
 ```bash
 # Make sure the flang-musl image exists first
@@ -144,18 +144,11 @@ docker build --no-cache -f Dockerfile.openmpi-musl \
   --build-arg mpiprocs=12 \
   -t gmao/llvm-flang-openmpi-musl:22.1.0-rc3 . \
   2>&1 | tee build.openmpi-musl.log
-
-# Extract the combined tarball
-docker create --name flang-openmpi-musl gmao/llvm-flang-openmpi-musl:22.1.0-rc3
-docker cp flang-openmpi-musl:/opt/llvm-flang-openmpi.tar.gz ./llvm-flang-openmpi-22.1.0-rc3-musl.tar.gz
-docker rm flang-openmpi-musl
 ```
 
-Then upload this tarball to a separate release: `v22.1.0-rc3-openmpi-musl`
+### (Optional) Push OpenMPI Docker Image to Docker Hub
 
-### Push OpenMPI Docker Image to Docker Hub
-
-If you want to make the OpenMPI Docker image available:
+If you want to make the OpenMPI Docker image available for direct Docker use:
 
 ```bash
 # Tag the image for Docker Hub
@@ -172,15 +165,18 @@ This allows users to pull the image directly:
 docker pull gmao/llvm-flang-openmpi-musl:22.1.0-rc3
 ```
 
+**Note:** The OpenMPI tarball is not distributed on GitHub releases. For systems outside Docker, 
+users should build their own MPI stack after installing the Flang binaries.
+
 ## Tag Naming Convention
 
-- **Flang only:** `v<LLVM-VERSION>-musl`
+- **Flang only (distributed on GitHub):** `v<LLVM-VERSION>-musl`
   - Example: `v22.1.0-rc3-musl`
   
-- **Flang + OpenMPI:** `v<LLVM-VERSION>-openmpi-<MPI-VERSION>-musl`
-  - Example: `v22.1.0-rc3-openmpi-5.0.7-musl`
+- **Flang + OpenMPI (Docker-only):** Use the same tag as Flang for the Docker image
+  - Example: `gmao/llvm-flang-openmpi-musl:v22.1.0-rc3`
 
-- **Latest main branch:** `musl-latest` or `musl-latest-openmpi`
+- **Latest main branch:** `musl-latest` or `musl-latest-openmpi` (Docker only)
 
 ## Cleanup (Optional)
 
