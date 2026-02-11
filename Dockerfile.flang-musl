@@ -18,9 +18,10 @@ RUN chmod +x /opt/build-flang.sh
 
 ARG llvmversion=main
 ARG procs=12
+ARG maxretries=2
 
 # Build flang with MUSL
-RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --procs=${procs} --no-gold --strip
+RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --procs=${procs} --max-retries=${maxretries} --no-gold --strip
 
 # Set the PATH to include the flang compiler
 ENV PATH=/opt/llvm-flang/bin:${PATH}
@@ -40,8 +41,8 @@ RUN cd /opt && tar czf llvm-flang.tar.gz llvm-flang/
 # Build command with a specific version of LLVM
 #   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
 #
-# Build command with custom number of processes (default is 12)
-#   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 --build-arg procs=16 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
+# Build command with custom number of processes and retries (default procs=12, maxretries=2)
+#   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 --build-arg procs=16 --build-arg maxretries=3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
 #
 # Extract tarball from built image:
 #   docker create --name flang-musl gmao/llvm-flang-musl:latest

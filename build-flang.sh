@@ -11,6 +11,7 @@
 #  --rebuild               just rebuild the source but do not download again
 #  --strip                 strip the binaries
 #  --procs                 number of build procs (default: 6)
+#  --max-retries=NUM       max retries if build fails (default: 1, no retries)
 #  --just-download         just download the source but do not build
 #  --verbose               print commands before execution
 #  -n | --dry-run          print commands without execution
@@ -27,6 +28,7 @@ usage() {
   printf "  --rebuild               just rebuild the source but do not download again\n"
   printf "  --strip                 strip the binaries\n"
   printf "  --procs=NUM             number of build procs [default: 6]\n"
+  printf "  --max-retries=NUM       max retries if build fails [default: 1]\n"
   printf "  --just-download         just download the source but do not build\n"
   printf "  --verbose               print commands before execution\n"
   printf "  -n | --dry-run          print commands without execution\n"
@@ -45,6 +47,7 @@ DRY_RUN=FALSE
 USE_GOLD=TRUE
 STRIP=""
 PROCS=6
+MAX_RETRIES=1
 DO_REBUILD=FALSE
 JUST_DOWNLOAD=FALSE
 
@@ -79,6 +82,9 @@ while [ $# -gt 0 ]; do
       ;;
    --procs=*)
       PROCS="${1#*=}"
+      ;;
+   --max-retries=*)
+      MAX_RETRIES="${1#*=}"
       ;;
    --verbose)
       set -x
@@ -242,12 +248,47 @@ if [ "$DO_REBUILD" = "FALSE" ]; then
    -B${llvm_build}
 fi
 
-TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j ${PROCS}
+# Build with retry logic
+set +e  # Temporarily disable exit-on-error for retry logic
+BUILD_SUCCESS=FALSE
+ATTEMPT=1
 
-TMPDIR=${TMPDIR} cmake --install ${llvm_build} ${STRIP}
+while [ $ATTEMPT -le $MAX_RETRIES ]; do
+  echo "Build attempt $ATTEMPT of $MAX_RETRIES"
+  
+  TMPDIR=${TMPDIR} cmake --build ${llvm_build} -j ${PROCS}
+  BUILD_RESULT=$?
+  
+  if [ $BUILD_RESULT -eq 0 ]; then
+    TMPDIR=${TMPDIR} cmake --install ${llvm_build} ${STRIP}
+    INSTALL_RESULT=$?
+    
+    if [ $INSTALL_RESULT -eq 0 ]; then
+      cd ${llvm_build}
+      TMPDIR=${TMPDIR} ninja -j ${PROCS} install
+      NINJA_RESULT=$?
+      
+      if [ $NINJA_RESULT -eq 0 ]; then
+        BUILD_SUCCESS=TRUE
+        break
+      fi
+    fi
+  fi
+  
+  if [ "$BUILD_SUCCESS" = "FALSE" ] && [ $ATTEMPT -lt $MAX_RETRIES ]; then
+    echo "Build attempt $ATTEMPT failed, retrying..."
+    ATTEMPT=$((ATTEMPT + 1))
+  else
+    break
+  fi
+done
 
-cd ${llvm_build}
-TMPDIR=${TMPDIR} ninja -j ${PROCS} install
+set -e  # Re-enable exit-on-error
+
+if [ "$BUILD_SUCCESS" = "FALSE" ]; then
+  echo "Build failed after $MAX_RETRIES attempts"
+  exit 1
+fi
 
 # If flang-new runs, then the build is successful
 # and we can remove the build and source directories
