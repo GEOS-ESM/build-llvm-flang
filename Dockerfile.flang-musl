@@ -44,6 +44,10 @@ RUN cd /opt && tar czf llvm-flang.tar.gz llvm-flang/
 # Build command with custom number of processes and retries (default procs=12, maxretries=2)
 #   docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 --build-arg procs=16 --build-arg maxretries=3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
 #
+# Push to registry
+#   docker push gmao/llvm-flang-musl:latest
+#   docker push gmao/llvm-flang-musl:22.1.0-rc3
+#
 # Extract tarball from built image:
 #   docker create --name flang-musl gmao/llvm-flang-musl:latest
 #   docker cp flang-musl:/opt/llvm-flang.tar.gz ./

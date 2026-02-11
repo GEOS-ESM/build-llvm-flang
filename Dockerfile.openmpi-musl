@@ -33,6 +33,10 @@ ENTRYPOINT ["/bin/bash"]
 # Build command with custom number of processes for OpenMPI build
 #   docker build --no-cache --progress=plain -f Dockerfile.openmpi-musl --build-arg mpiversion=5.0.5 --build-arg mpiprocs=16 -t gmao/llvm-flang-openmpi-musl:latest . 2>&1 | tee build.openmpi-musl.log
 #
+# Push to registry
+#   docker push gmao/llvm-flang-openmpi-musl:latest
+#   docker push gmao/llvm-flang-openmpi-musl:5.0.5
+#
 # Extract tarballs from built image:
 #   docker create --name flang-openmpi-musl gmao/llvm-flang-openmpi-musl:latest
 #   docker cp flang-openmpi-musl:/opt/llvm-flang-openmpi.tar.gz ./
