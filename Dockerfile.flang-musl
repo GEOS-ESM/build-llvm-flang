@@ -2,6 +2,7 @@ FROM alpine:latest
 
 # Install dependencies for Alpine (uses MUSL by default)
 RUN apk add --no-cache \
+    bash \
     build-base \
     cmake \
     curl \
