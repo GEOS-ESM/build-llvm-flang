@@ -43,6 +43,54 @@ This repo has Dockerfiles that are used to build the a couple of images hosted o
 - [`gmao/llvm-flang-openmpi`](https://hub.docker.com/r/gmao/llvm-flang-openmpi/tags): This is based on the above image and adds
   OpenMPI.
 
+## MUSL Builds for Portability
+
+For maximum portability to systems with older glibc versions, MUSL-based builds are available:
+
+- [`gmao/llvm-flang-musl`](https://hub.docker.com/r/gmao/llvm-flang-musl/tags): Alpine Linux-based image with MUSL libc for 
+  maximum portability. Use this if you need to run compiled binaries on systems with older glibc.
+- [`gmao/llvm-flang-openmpi-musl`](https://hub.docker.com/r/gmao/llvm-flang-openmpi-musl/tags): MUSL-based image with OpenMPI 
+  included.
+
+### Building MUSL Images
+
+Build the MUSL Flang image:
+```bash
+docker build --no-cache -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang-musl:22.1.0-rc3 .
+```
+
+Build MUSL Flang with OpenMPI on top (requires the above image to exist):
+```bash
+docker build --no-cache -f Dockerfile.openmpi-musl -t gmao/llvm-flang-openmpi-musl:latest .
+```
+
+### Extracting MUSL Binaries
+
+Extract the tarball from the Docker image:
+```bash
+docker create --name flang-musl gmao/llvm-flang-musl:22.1.0-rc3
+docker cp flang-musl:/opt/llvm-flang.tar.gz ./llvm-flang-22.1.0-rc3.tar.gz
+docker rm flang-musl
+tar xzf llvm-flang-22.1.0-rc3.tar.gz
+```
+
+### Downloading Pre-built MUSL Binaries
+
+Pre-built MUSL tarballs are available on the [Releases](https://github.com/GEOS-ESM/build-llvm-flang/releases) page:
+
+```bash
+wget https://github.com/GEOS-ESM/build-llvm-flang/releases/download/v22.1.0-rc3-musl/llvm-flang-22.1.0-rc3-musl.tar.gz
+tar xzf llvm-flang-22.1.0-rc3-musl.tar.gz
+export PATH=$(pwd)/llvm-flang/bin:$PATH
+```
+
+Or install to a permanent location:
+```bash
+wget https://github.com/GEOS-ESM/build-llvm-flang/releases/download/v22.1.0-rc3-musl/llvm-flang-22.1.0-rc3-musl.tar.gz
+tar xzf llvm-flang-22.1.0-rc3-musl.tar.gz -C /opt
+export PATH=/opt/llvm-flang/bin:$PATH
+```
+
 ---
 
 ## Original Instructions
