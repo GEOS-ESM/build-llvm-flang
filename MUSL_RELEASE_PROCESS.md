@@ -114,7 +114,32 @@ And can be downloaded:
 wget https://github.com/GEOS-ESM/build-llvm-flang/releases/download/v22.1.0-rc3-musl/llvm-flang-22.1.0-rc3-musl.tar.gz
 ```
 
-## Optional: Also Build OpenMPI + Flang
+## Step 5: (Optional) Push Docker Image to Docker Hub
+
+If you want to make the Docker image available for direct use (without extracting tarballs):
+
+```bash
+# Tag the image for Docker Hub
+docker tag gmao/llvm-flang-musl:22.1.0-rc3 gmao/llvm-flang-musl:22.1.0-rc3
+docker tag gmao/llvm-flang-musl:22.1.0-rc3 gmao/llvm-flang-musl:latest
+
+# Push to Docker Hub (requires authentication: docker login)
+docker push gmao/llvm-flang-musl:22.1.0-rc3
+docker push gmao/llvm-flang-musl:latest
+```
+
+This allows users to pull the image directly:
+```bash
+docker pull gmao/llvm-flang-musl:22.1.0-rc3
+```
+
+If you also built OpenMPI:
+```bash
+docker push gmao/llvm-flang-openmpi-musl:22.1.0-rc3
+docker push gmao/llvm-flang-openmpi-musl:latest
+```
+
+## Step 6: (Optional) Also Build OpenMPI + Flang
 
 If you want to include OpenMPI with the Flang build:
 
