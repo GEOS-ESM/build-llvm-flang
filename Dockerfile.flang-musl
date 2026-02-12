@@ -21,8 +21,8 @@ ARG llvmversion=main
 ARG procs=12
 ARG maxretries=2
 
-# Build flang with MUSL
-RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --procs=${procs} --max-retries=${maxretries} --no-gold --strip
+# Build flang with MUSL (exclude libunwind as Alpine provides it)
+RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --procs=${procs} --max-retries=${maxretries} --llvm-runtimes="libcxxabi;libcxx;compiler-rt;flang-rt;openmp" --no-gold --strip
 
 # Set the PATH to include the flang compiler
 ENV PATH=/opt/llvm-flang/bin:${PATH}
