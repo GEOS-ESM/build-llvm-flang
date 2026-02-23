@@ -34,8 +34,11 @@ RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversio
 # Set the PATH to include the flang compiler
 ENV PATH=/opt/llvm-flang/bin:${PATH}
 ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib:${LD_LIBRARY_PATH}
-# This seems needed for OpenMP work
-ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib/x86_64-unknown-linux-gnu:${LD_LIBRARY_PATH}
+# This seems needed for OpenMP work - detect and add architecture-specific lib path
+RUN ARCH_LIB=$(ls -d /opt/llvm-flang/lib/*-unknown-linux-gnu 2>/dev/null | head -1) && \
+    if [ -n "$ARCH_LIB" ]; then \
+        echo "export LD_LIBRARY_PATH=${ARCH_LIB}:\${LD_LIBRARY_PATH}" >> /etc/bash.bashrc; \
+    fi
 
 ENV CC=/opt/llvm-flang/bin/clang
 ENV CXX=/opt/llvm-flang/bin/clang++
@@ -44,7 +47,7 @@ ENV FC=/opt/llvm-flang/bin/flang
 # Build command for main tarfile with date
 #   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:$(date '+%F') -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
 # Build command with a specific version of LLVM
-#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=19.1.0-rc3 -t gmao/llvm-flang:19.1.0-rc3 . 2>&1 | tee build.flang-19.1.0-rc3.log
+#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=22.1.0-rc3 -t gmao/llvm-flang:22.1.0-rc3 . 2>&1 | tee build.flang-22.1.0-rc3.log
 #
 # Command to tag the latest
 #   docker tag gmao/llvm-flang:$(date '+%F') gmao/llvm-flang

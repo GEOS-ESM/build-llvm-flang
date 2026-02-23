@@ -116,7 +116,7 @@ bash build-flang.sh https://github.com/llvm/llvm-project/archive/refs/heads/rele
 For a specific version of LLVM:
 
 ```sh
-bash build-flang.sh https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-19.1.0-rc1.zip
+bash build-flang.sh https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-22.1.0-rc3.zip
 ```
 
 The source download is about 300 MB.

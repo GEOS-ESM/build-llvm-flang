@@ -6,12 +6,12 @@ ENV myOpenMPI=openmpi-${mpiversion}
 
 # Download and build ${myOpenMPI}
 RUN mkdir  -p /bld && cd /bld && \
-    wget https://download.open-mpi.org/release/open-mpi/v5.0/${myOpenMPI}.tar.gz && \
-    tar zxvf ${myOpenMPI}.tar.gz && \
+    wget --no-check-certificate https://download.open-mpi.org/release/open-mpi/v5.0/${myOpenMPI}.tar.gz && \
+    tar zxf ${myOpenMPI}.tar.gz && \
     cd ${myOpenMPI} && \
     ./configure --prefix=/opt/${myOpenMPI} --enable-static && \
     make -j 8 && make install-strip && \
-    cd / && \rm -rf /bld
+    cd / && rm -rf /bld
 
 # Add ${myOpenMPI} to path
 ENV OPENMPI=/opt/${myOpenMPI}
