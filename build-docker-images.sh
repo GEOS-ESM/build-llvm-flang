@@ -11,9 +11,9 @@ usage() {
     echo "  -n           Dry run: print docker commands without executing them"
     echo "  -h           Print this help message"
     echo ""
-    echo "Images built:"
-    echo "  gmao/llvm-flang:\$DATE   (also tagged :latest)"
-    echo "  gmao/llvm-flang-openmpi:latest"
+    echo "Images built and pushed:"
+    echo "  gmao/llvm-flang:\$LLVM_VERSION   (also tagged :latest)"
+    echo "  gmao/llvm-flang-openmpi:\$LLVM_VERSION   (also tagged :latest)"
     echo ""
     echo "Examples:"
     echo "  $0                        # build with defaults (LLVM 22, OpenMPI 5.0.10)"
@@ -54,13 +54,11 @@ DATE=$(date '+%F')
 run docker build --no-cache --progress=plain \
     -f Dockerfile.flang \
     --build-arg llvmversion=${LLVM_VERSION} \
-    -t gmao/llvm-flang:$DATE \
+    -t gmao/llvm-flang:${LLVM_VERSION} \
     -t gmao/llvm-flang:latest \
-    . 2>&1 | tee build.flang.$DATE.log
+    . 2>&1 | tee build.flang.${LLVM_VERSION}.log
 
-run docker tag gmao/llvm-flang:$DATE gmao/llvm-flang
-
-run docker push gmao/llvm-flang:$DATE
+run docker push gmao/llvm-flang:${LLVM_VERSION}
 run docker push gmao/llvm-flang:latest
 
 ## Open MPI ##
@@ -68,7 +66,9 @@ run docker push gmao/llvm-flang:latest
 run docker build --no-cache --progress=plain \
     -f Dockerfile.openmpi \
     --build-arg mpiversion=${MPI_VERSION} \
-    -t gmao/llvm-flang-openmpi \
-    . 2>&1 | tee build.openmpi.$DATE.log
+    -t gmao/llvm-flang-openmpi:${LLVM_VERSION} \
+    -t gmao/llvm-flang-openmpi:latest \
+    . 2>&1 | tee build.openmpi.${LLVM_VERSION}.log
 
+run docker push gmao/llvm-flang-openmpi:${LLVM_VERSION}
 run docker push gmao/llvm-flang-openmpi:latest

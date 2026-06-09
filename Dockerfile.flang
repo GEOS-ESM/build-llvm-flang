@@ -43,15 +43,12 @@ ENV LD_LIBRARY_PATH=/usr/lib/llvm-${llvmversion}/lib:${LD_LIBRARY_PATH}
 ENTRYPOINT ["/bin/bash"]
 
 # Build command for default version (LLVM 22):
-#   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:$(date '+%F') -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
+#   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:22 -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
 # Build command with a specific LLVM major version:
 #   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=21 -t gmao/llvm-flang:21 . 2>&1 | tee build.flang-21.log
 #
-# Command to tag the latest
-#   docker tag gmao/llvm-flang:$(date '+%F') gmao/llvm-flang
-#
 # Command to push
-#   docker push gmao/llvm-flang:$(date '+%F')
+#   docker push gmao/llvm-flang:22
 #   docker push gmao/llvm-flang:latest
 
 # vi: ft=dockerfile

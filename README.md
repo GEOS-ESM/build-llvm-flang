@@ -52,7 +52,7 @@ Build with the default LLVM version (22):
 ```bash
 docker build --no-cache --progress=plain \
     -f Dockerfile.flang \
-    -t gmao/llvm-flang:$(date '+%F') \
+    -t gmao/llvm-flang:22 \
     -t gmao/llvm-flang:latest \
     . 2>&1 | tee build.flang.log
 ```
@@ -91,9 +91,9 @@ docker build --no-cache --progress=plain \
 ### Push to Docker Hub
 
 ```bash
-DATE=$(date '+%F')
-docker push gmao/llvm-flang:$DATE
+docker push gmao/llvm-flang:22
 docker push gmao/llvm-flang:latest
+docker push gmao/llvm-flang-openmpi:22
 docker push gmao/llvm-flang-openmpi:latest
 ```
 
