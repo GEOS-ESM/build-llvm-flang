@@ -33,12 +33,16 @@ RUN ln -s /usr/bin/clang-${llvmversion}   /usr/local/bin/clang   && \
     ln -s /usr/bin/clang++-${llvmversion} /usr/local/bin/clang++ && \
     ln -s /usr/bin/flang-${llvmversion}   /usr/local/bin/flang
 
+# ARG must be re-declared after each FROM (or RUN layer) for ENV to expand it
+ARG llvmversion=22
 ENV CC=clang-${llvmversion}
 ENV CXX=clang++-${llvmversion}
 ENV FC=flang-${llvmversion}
 
-# The OpenMP runtime from apt lives under llvm's lib dir
-ENV LD_LIBRARY_PATH=/usr/lib/llvm-${llvmversion}/lib:${LD_LIBRARY_PATH}
+# The OpenMP runtime from apt lives under llvm's lib dir.
+# Do NOT append ${LD_LIBRARY_PATH} here — it is undefined at build time and
+# Docker would set it to the literal string, corrupting runtime lib resolution.
+ENV LD_LIBRARY_PATH=/usr/lib/llvm-${llvmversion}/lib
 
 ENTRYPOINT ["/bin/bash"]
 
