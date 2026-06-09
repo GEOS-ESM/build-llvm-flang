@@ -1,8 +1,4 @@
 version: 2.1
-##
-# The config will be executed on each pull_request update due to the GitHub Workflow.
-# Each push will also trigger the config, due to default CircleCI's behavior.
-##
 
 parameters:
   GHA_Actor:
@@ -19,19 +15,37 @@ parameters:
     default: ""
 
 workflows:
+  # Weekly scheduled build: every Sunday at midnight UTC.
+  # Also runs on manual CircleCI pipeline triggers and via the GitHub Actions bridge.
   build-docker-images:
+    triggers:
+      - schedule:
+          cron: "0 0 * * 0"
+          filters:
+            branches:
+              only: main
+    jobs:
+      - build-flang-image:
+          context:
+            - docker-hub-creds
+      - build-openmpi-image:
+          context:
+            - docker-hub-creds
+          requires:
+            - build-flang-image
+
+  # Manual trigger via GitHub Actions workflow_dispatch bridge.
+  build-docker-images-manual:
     when: << pipeline.parameters.GHA_Action >>
     jobs:
       - build-flang-image:
           context:
             - docker-hub-creds
-            - ghcr-creds
-      #- build-openmpi-image:
-          #context:
-            #- docker-hub-creds
-            #- ghcr-creds
-          #requires:
-            #- build-flang-image
+      - build-openmpi-image:
+          context:
+            - docker-hub-creds
+          requires:
+            - build-flang-image
 
 jobs:
   build-flang-image:
@@ -49,15 +63,17 @@ jobs:
       - run:
           name: Build Flang image
           command: |
-            DATE=$(date '+%F')
-            ###docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:${DATE} -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
-            docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:ci-test .
+            docker build --no-cache --progress=plain \
+              -f Dockerfile.flang \
+              --build-arg llvmversion=22 \
+              -t gmao/llvm-flang:22 \
+              -t gmao/llvm-flang:latest \
+              . 2>&1 | tee build.flang.log
       - run:
           name: Push Flang image to Docker Hub
           command: |
-            ###docker push gmao/llvm-flang:${DATE}
-            ###docker push gmao/llvm-flang:latest
-            docker push gmao/llvm-flang:ci-test
+            docker push gmao/llvm-flang:22
+            docker push gmao/llvm-flang:latest
 
   build-openmpi-image:
     docker:
@@ -74,8 +90,14 @@ jobs:
       - run:
           name: Build OpenMPI image
           command: |
-            docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi .
+            docker build --no-cache --progress=plain \
+              -f Dockerfile.openmpi \
+              --build-arg mpiversion=5.0.10 \
+              -t gmao/llvm-flang-openmpi:22 \
+              -t gmao/llvm-flang-openmpi:latest \
+              . 2>&1 | tee build.openmpi.log
       - run:
-          name: Push Open MPI image to Docker Hub
+          name: Push OpenMPI image to Docker Hub
           command: |
-            docker push gmao/llvm-flang-openmpi
+            docker push gmao/llvm-flang-openmpi:22
+            docker push gmao/llvm-flang-openmpi:latest
