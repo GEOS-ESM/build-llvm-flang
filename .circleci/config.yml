@@ -15,27 +15,9 @@ parameters:
     default: ""
 
 workflows:
-  # Weekly scheduled build: every Sunday at midnight UTC.
-  # Also runs on manual CircleCI pipeline triggers and via the GitHub Actions bridge.
+  # Triggered by GitHub Actions (weekly schedule or manual workflow_dispatch).
+  # See .github/workflows/trigger-docker-build.yml.
   build-docker-images:
-    triggers:
-      - schedule:
-          cron: "0 0 * * 0"
-          filters:
-            branches:
-              only: main
-    jobs:
-      - build-flang-image:
-          context:
-            - docker-hub-creds
-      - build-openmpi-image:
-          context:
-            - docker-hub-creds
-          requires:
-            - build-flang-image
-
-  # Manual trigger via GitHub Actions workflow_dispatch bridge.
-  build-docker-images-manual:
     when: << pipeline.parameters.GHA_Action >>
     jobs:
       - build-flang-image:

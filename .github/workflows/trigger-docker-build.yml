@@ -1,7 +1,10 @@
 name: Trigger Docker Build
 
-# We want to be able to trigger this workflow manually
 on:
+  # Weekly scheduled build: every Sunday at midnight UTC
+  schedule:
+    - cron: "0 0 * * 0"
+  # Allow manual triggering from the GitHub Actions UI
   workflow_dispatch:
 
 jobs:
