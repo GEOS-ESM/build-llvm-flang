@@ -1,0 +1,1 @@
+docker build --no-cache --progress=plain -f Dockerfile.flang-musl --build-arg llvmversion=22.1.0-rc3 --build-arg procs=4 --build-arg maxretries=3 -t gmao/llvm-flang-musl:22.1.0-rc3 . 2>&1 | tee build.flang-musl-22.1.0-rc3.log
