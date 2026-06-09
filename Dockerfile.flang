@@ -44,7 +44,7 @@ ENV FC=flang-${llvmversion}
 # Docker would set it to the literal string, corrupting runtime lib resolution.
 ENV LD_LIBRARY_PATH=/usr/lib/llvm-${llvmversion}/lib
 
-ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]
 
 # Build command for default version (LLVM 22):
 #   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:22 -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
