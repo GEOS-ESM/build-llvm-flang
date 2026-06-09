@@ -43,6 +43,66 @@ This repo has Dockerfiles that are used to build the a couple of images hosted o
 - [`gmao/llvm-flang-openmpi`](https://hub.docker.com/r/gmao/llvm-flang-openmpi/tags): This is based on the above image and adds
   OpenMPI.
 
+## Building Ubuntu Images
+
+### Flang base image
+
+Build with the default LLVM version (22):
+
+```bash
+docker build --no-cache --progress=plain \
+    -f Dockerfile.flang \
+    -t gmao/llvm-flang:$(date '+%F') \
+    -t gmao/llvm-flang:latest \
+    . 2>&1 | tee build.flang.log
+```
+
+To build with a different LLVM major version (e.g. 21):
+
+```bash
+docker build --no-cache --progress=plain \
+    -f Dockerfile.flang \
+    --build-arg llvmversion=21 \
+    -t gmao/llvm-flang:21 \
+    . 2>&1 | tee build.flang-21.log
+```
+
+### OpenMPI image
+
+Build with the default OpenMPI version (requires `gmao/llvm-flang:latest` to exist locally):
+
+```bash
+docker build --no-cache --progress=plain \
+    -f Dockerfile.openmpi \
+    -t gmao/llvm-flang-openmpi:latest \
+    . 2>&1 | tee build.openmpi.log
+```
+
+To build with a specific OpenMPI version:
+
+```bash
+docker build --no-cache --progress=plain \
+    -f Dockerfile.openmpi \
+    --build-arg mpiversion=5.0.10 \
+    -t gmao/llvm-flang-openmpi:5.0.10 \
+    . 2>&1 | tee build.openmpi-5.0.10.log
+```
+
+### Push to Docker Hub
+
+```bash
+DATE=$(date '+%F')
+docker push gmao/llvm-flang:$DATE
+docker push gmao/llvm-flang:latest
+docker push gmao/llvm-flang-openmpi:latest
+```
+
+Or use the convenience script which does all of the above:
+
+```bash
+bash build-docker-images.sh
+```
+
 ## MUSL Builds for Portability
 
 For maximum portability to systems with older glibc versions, MUSL-based builds are available:
