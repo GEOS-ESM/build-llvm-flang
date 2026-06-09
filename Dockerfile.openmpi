@@ -1,6 +1,6 @@
 FROM gmao/llvm-flang:latest
 
-ARG mpiversion=5.0.7
+ARG mpiversion=5.0.10
 
 ENV myOpenMPI=openmpi-${mpiversion}
 

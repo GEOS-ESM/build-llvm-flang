@@ -3,48 +3,49 @@ FROM ubuntu:24.04
 # Needed so tzdata isn't interactive
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
+ARG llvmversion=22
+
+# Install prerequisites for llvm.sh
 RUN apt-get update && \
     apt-get install -y \
-       build-essential \
-       cmake \
-       curl \
-       git \
-       m4 \
-       ninja-build \
-       python3 \
+       gnupg \
+       lsb-release \
+       software-properties-common \
        wget && \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Use the official apt.llvm.org installer to set up the repo and install
+# the full LLVM toolchain (clang, lld, lldb, libc++, libomp, mlir, etc.)
+# then explicitly install flang (not included in llvm.sh "all" set).
+RUN wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && \
+    chmod +x /tmp/llvm.sh && \
+    /tmp/llvm.sh ${llvmversion} all && \
+    apt-get install -y flang-${llvmversion} && \
+    rm -f /tmp/llvm.sh && \
+    apt-get clean autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create unversioned symlinks for convenience
+RUN ln -s /usr/bin/clang-${llvmversion}   /usr/local/bin/clang   && \
+    ln -s /usr/bin/clang++-${llvmversion} /usr/local/bin/clang++ && \
+    ln -s /usr/bin/flang-${llvmversion}   /usr/local/bin/flang
+
+ENV CC=clang-${llvmversion}
+ENV CXX=clang++-${llvmversion}
+ENV FC=flang-${llvmversion}
+
+# The OpenMP runtime from apt lives under llvm's lib dir
+ENV LD_LIBRARY_PATH=/usr/lib/llvm-${llvmversion}/lib:${LD_LIBRARY_PATH}
+
 ENTRYPOINT ["/bin/bash"]
 
-# We will be running a script called "build-flang.sh" that will
-# download and build the flang compiler. This script will be copied
-# to the container and run as part of the build process.
-COPY build-flang.sh /opt/build-flang.sh
-
-ARG llvmversion=main
-
-# Next we will run the script to build the flang compiler with the options
-
-RUN CC=gcc CXX=g++ /opt/build-flang.sh --prefix=/opt --llvm-version=${llvmversion} --no-gold --strip
-
-# Set the PATH to include the flang compiler
-ENV PATH=/opt/llvm-flang/bin:${PATH}
-ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib:${LD_LIBRARY_PATH}
-# This seems needed for OpenMP work
-ENV LD_LIBRARY_PATH=/opt/llvm-flang/lib/x86_64-unknown-linux-gnu:${LD_LIBRARY_PATH}
-
-ENV CC=/opt/llvm-flang/bin/clang
-ENV CXX=/opt/llvm-flang/bin/clang++
-ENV FC=/opt/llvm-flang/bin/flang
-
-# Build command for main tarfile with date
+# Build command for default version (LLVM 22):
 #   docker build --no-cache --progress=plain -f Dockerfile.flang -t gmao/llvm-flang:$(date '+%F') -t gmao/llvm-flang:latest . 2>&1 | tee build.flang.log
-# Build command with a specific version of LLVM
-#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=19.1.0-rc3 -t gmao/llvm-flang:19.1.0-rc3 . 2>&1 | tee build.flang-19.1.0-rc3.log
+# Build command with a specific LLVM major version:
+#   docker build --no-cache --progress=plain -f Dockerfile.flang --build-arg llvmversion=21 -t gmao/llvm-flang:21 . 2>&1 | tee build.flang-21.log
 #
 # Command to tag the latest
 #   docker tag gmao/llvm-flang:$(date '+%F') gmao/llvm-flang
