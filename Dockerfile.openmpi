@@ -2,7 +2,24 @@ FROM gmao/llvm-flang:latest
 
 ARG mpiversion=5.0.10
 
+# ARG must be re-declared before ENV for the value to expand
+ARG mpiversion=5.0.10
 ENV myOpenMPI=openmpi-${mpiversion}
+
+# OpenMPI 5.x bundles libevent/hwloc/pmix as subcomponents whose build systems
+# need bootstrapping — requires autoconf/automake/libtool/m4.
+# Also need make, wget, and a Fortran compiler (already in base via FC env).
+RUN apt-get update && \
+    apt-get install -y \
+       autoconf \
+       automake \
+       libtool \
+       m4 \
+       make \
+       wget && \
+    apt-get clean autoclean && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Download and build ${myOpenMPI}
 RUN mkdir  -p /bld && cd /bld && \
