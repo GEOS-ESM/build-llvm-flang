@@ -18,7 +18,7 @@ ENV OPENMPI=/opt/${myOpenMPI}
 ENV PATH=/opt/${myOpenMPI}/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/${myOpenMPI}/lib:$LD_LIBRARY_PATH
 
-ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]
 
 # Build command for default version of OpenMPI
 #   docker build --no-cache --progress=plain -f Dockerfile.openmpi -t gmao/llvm-flang-openmpi . 2>&1 | tee build.openmpi.log
